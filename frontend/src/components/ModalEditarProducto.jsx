@@ -1,4 +1,3 @@
-// src/components/ModalEditarProducto.jsx
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 
@@ -41,40 +40,36 @@ export function ModalEditarProducto({ producto, tipo, onClose, onActualizar }) {
       let result;
       
       if (tipo === 'libro') {
-  result = await supabase
-    .from('libros')
-    .update({
-      titulo: formData.nombre,
-      autor: formData.autor || null,
-      editorial: formData.editorial || null,
-      precio_efectivo: parseFloat(formData.precio_efectivo),
-      precio_tarjeta: parseFloat(formData.precio_tarjeta),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', formData.id);
-} else {
-  // Actualizar ropa - SIN campo tipo
-  const ganancia = parseFloat(formData.precio_efectivo) - parseFloat(formData.precio_compra || 0);
-  
-  result = await supabase
-    .from('ropa')
-    .update({
-      nombre: formData.nombre,
-      colegio: formData.colegio,
-      talle: formData.talle || null,
-      color: formData.color || null,
-      precio_efectivo: parseFloat(formData.precio_efectivo),
-      precio_tarjeta: parseFloat(formData.precio_tarjeta) || parseFloat(formData.precio_efectivo),
-      ganancia: ganancia,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', formData.id);
-}
-
-      if (result.error) {
-        console.error('Error de Supabase:', result.error);
-        throw new Error(result.error.message);
+        result = await supabase
+          .from('libros')
+          .update({
+            titulo: formData.nombre,
+            autor: formData.autor || null,
+            editorial: formData.editorial || null,
+            precio_efectivo: parseFloat(formData.precio_efectivo),
+            precio_tarjeta: parseFloat(formData.precio_tarjeta),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', formData.id);
+      } else {
+        const ganancia = parseFloat(formData.precio_efectivo) - parseFloat(formData.precio_compra || 0);
+        
+        result = await supabase
+          .from('ropa')
+          .update({
+            nombre: formData.nombre,
+            colegio: formData.colegio,
+            talle: formData.talle || null,
+            color: formData.color || null,
+            precio_efectivo: parseFloat(formData.precio_efectivo),
+            precio_tarjeta: parseFloat(formData.precio_tarjeta) || parseFloat(formData.precio_efectivo),
+            ganancia: ganancia,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', formData.id);
       }
+
+      if (result.error) throw result.error;
 
       alert('✅ Producto actualizado correctamente');
       onActualizar();
@@ -218,15 +213,6 @@ export function ModalEditarProducto({ producto, tipo, onClose, onActualizar }) {
                 {loading ? 'Guardando...' : '💾 Guardar cambios'}
               </button>
             </div>
-            {esJefe && (
-                <button
-                  type="button"
-                  onClick={handleEliminar}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
-                >
-                  🗑️ Eliminar producto
-                </button>
-              )}
           </form>
         </div>
       </div>

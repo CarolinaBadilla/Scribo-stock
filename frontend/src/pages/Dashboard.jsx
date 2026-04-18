@@ -16,6 +16,7 @@ export function Dashboard() {
   const [tipoEditando, setTipoEditando] = useState(null);
   const [mostrarAgregar, setMostrarAgregar] = useState(false);
   
+  // Obtener el usuario y su rol
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const esJefe = user.rol === 'jefe';
 
@@ -140,7 +141,13 @@ export function Dashboard() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b">
-                  <th className="text-left p-3 font-bold">Tipo</th><th className="text-left p-3 font-bold">Producto</th><th className="text-left p-3 font-bold">Detalle</th><th className="text-center p-3 font-bold">Stock</th><th className="text-right p-3 font-bold">Precio Efectivo</th><th className="text-right p-3 font-bold">Precio Tarjeta</th><th className="text-center p-3 font-bold">Acciones</th>
+                  <th className="text-left p-3 font-bold">Tipo</th>
+                  <th className="text-left p-3 font-bold">Producto</th>
+                  <th className="text-left p-3 font-bold">Detalle</th>
+                  <th className="text-center p-3 font-bold">Stock</th>
+                  <th className="text-right p-3 font-bold">Precio Efectivo</th>
+                  <th className="text-right p-3 font-bold">Precio Tarjeta</th>
+                  <th className="text-center p-3 font-bold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,7 +159,27 @@ export function Dashboard() {
                     <td className="p-3 text-center"><span className={`px-3 py-1 rounded-full text-sm font-bold ${producto.cantidad >= 15 ? 'bg-blue-500 text-white' : producto.cantidad >= 6 ? 'bg-green-500 text-white' : producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'}`}>{producto.cantidad || 0} und</span></td>
                     <td className="p-3 text-right font-medium">{formatMoney(producto.precio_efectivo || 0)}</td>
                     <td className="p-3 text-right font-medium">{formatMoney(producto.precio_tarjeta || 0)}</td>
-                    <td className="p-3 text-center"><div className="flex gap-2 justify-center"><button onClick={() => { setProductoEditando(producto); setTipoEditando(producto.tipo_producto); }} className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">✏️ Editar</button>{esJefe && <button onClick={() => eliminarProducto(producto)} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">🗑️ Eliminar</button>}</div></td>
+                    <td className="p-3 text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button 
+                          onClick={() => {
+                            setProductoEditando(producto);
+                            setTipoEditando(producto.tipo_producto);
+                          }} 
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                        >
+                          ✏️ Editar
+                        </button>
+                        {esJefe && (
+                          <button 
+                            onClick={() => eliminarProducto(producto)} 
+                            className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -161,8 +188,28 @@ export function Dashboard() {
           </div>
         )}
       </div>
-      {productoEditando && <ModalEditarProducto producto={productoEditando} tipo={tipoEditando} onClose={() => { setProductoEditando(null); setTipoEditando(null); }} onActualizar={cargarStock} />}
-      {mostrarAgregar && <ModalAgregarProducto onClose={() => setMostrarAgregar(false)} onAgregar={() => { cargarStock(); setMostrarAgregar(false); }} />}
+      
+      {productoEditando && (
+        <ModalEditarProducto
+          producto={productoEditando}
+          tipo={tipoEditando}
+          onClose={() => {
+            setProductoEditando(null);
+            setTipoEditando(null);
+          }}
+          onActualizar={cargarStock}
+        />
+      )}
+      
+      {mostrarAgregar && (
+        <ModalAgregarProducto
+          onClose={() => setMostrarAgregar(false)}
+          onAgregar={() => {
+            cargarStock();
+            setMostrarAgregar(false);
+          }}
+        />
+      )}
     </div>
   );
 }
