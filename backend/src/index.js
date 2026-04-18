@@ -15,8 +15,17 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
-app.use(cors());
+// Configurar CORS para permitir el frontend
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'https://libreria-stock-frontend.onrender.com'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Rutas
@@ -27,7 +36,6 @@ app.use('/api/ventas', ventasRoutes);
 app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
 
-// Ruta de prueba
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend funcionando' });
 });
