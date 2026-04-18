@@ -1,0 +1,15 @@
+# backend/render.yaml
+services:
+  - type: web
+    name: libreria-stock-backend
+    runtime: node
+    repo: https://github.com/TU_USUARIO/TU_REPO
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: PORT
+        value: 3000
