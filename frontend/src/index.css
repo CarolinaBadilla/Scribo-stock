@@ -65,3 +65,34 @@ body {
 .hover-shadow-card:hover {
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
 }
+
+/* Aumentar espacio entre todos los elementos */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body * {
+  line-height: 1.5;
+}
+
+/* Espacio entre elementos hijos directos */
+.container-page > *,
+main > div > * {
+  margin-bottom: 1.25rem;
+}
+
+.container-page > *:last-child,
+main > div > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Espacio entre elementos de formulario */
+form > * {
+  margin-bottom: 1.25rem;
+}
+
+form > *:last-child {
+  margin-bottom: 0;
+}
