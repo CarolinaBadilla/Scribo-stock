@@ -44,8 +44,8 @@ export function Compras() {
   if (loading) return <div className="text-center py-10">Cargando...</div>;
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full">
+      <div className="w-full">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">📦 Registrar Compra a Proveedor</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">

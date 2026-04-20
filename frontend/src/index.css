@@ -66,21 +66,14 @@ body {
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
 }
 
-/* Aumentar espacio entre todos los elementos */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body * {
-  line-height: 1.5;
-}
+/* ============================================
+   ESPACIADO EQUILIBRADO (NI POCO NI MUCHO)
+   ============================================ */
 
 /* Espacio entre elementos hijos directos */
 .container-page > *,
 main > div > * {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .container-page > *:last-child,
@@ -90,99 +83,153 @@ main > div > *:last-child {
 
 /* Espacio entre elementos de formulario */
 form > * {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 form > *:last-child {
   margin-bottom: 0;
 }
 
-/* src/index.css - Agregar al FINAL del archivo */
-
-/* FORZAR ESPACIADO GLOBAL */
-body {
-  line-height: 1.6 !important;
+/* Márgenes laterales equilibrados */
+#root > div > main > div {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
-/* Forzar más espacio en contenedores */
-#root > div > main > div {
-  padding-left: 2rem !important;
-  padding-right: 2rem !important;
+@media (min-width: 640px) {
+  #root > div > main > div {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
 }
 
 @media (min-width: 768px) {
   #root > div > main > div {
-    padding-left: 3rem !important;
-    padding-right: 3rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
   }
 }
 
 @media (min-width: 1024px) {
   #root > div > main > div {
-    padding-left: 4rem !important;
-    padding-right: 4rem !important;
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
   }
 }
 
-/* Forzar más espacio entre elementos */
+/* Márgenes entre elementos (valores reducidos) */
 .mb-4 {
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 1rem !important;
 }
 .mb-6 {
-  margin-bottom: 2rem !important;
+  margin-bottom: 1.25rem !important;
 }
 .mb-8 {
-  margin-bottom: 2.5rem !important;
+  margin-bottom: 1.5rem !important;
 }
 .mb-10 {
-  margin-bottom: 3rem !important;
+  margin-bottom: 1.75rem !important;
 }
 
-/* Forzar más padding en tarjetas */
+/* Padding en tarjetas (reducido) */
 .rounded-xl,
 .rounded-2xl {
-  padding: 1.5rem !important;
+  padding: 1rem !important;
 }
 
 @media (min-width: 768px) {
   .rounded-xl,
   .rounded-2xl {
-    padding: 2rem !important;
+    padding: 1.25rem !important;
   }
 }
 
-/* Forzar botones más grandes */
+/* Botones (tamaño normal) */
 button,
 .btn {
-  padding: 0.75rem 1.5rem !important;
-  font-size: 1rem !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
 }
 
-/* Forzar inputs más grandes */
+/* Botones más grandes para acciones principales */
+button.btn-primary,
+button.bg-green-500,
+button.bg-blue-500 {
+  padding: 0.625rem 1.25rem !important;
+  font-size: 0.9375rem !important;
+}
+
+/* Inputs y selects */
 input,
 select {
-  padding: 0.75rem 1rem !important;
-  font-size: 1rem !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
 }
 
-/* Forzar gap en grids */
+/* Gap en grids (reducido) */
 .grid {
-  gap: 1.5rem !important;
+  gap: 1rem !important;
 }
 
 @media (min-width: 768px) {
   .grid {
-    gap: 2rem !important;
+    gap: 1.25rem !important;
   }
 }
 
-/* Forzar espacio en tablas */
+/* Espacio en tablas (reducido) */
 th, td {
-  padding: 1rem !important;
+  padding: 0.75rem !important;
 }
 
 @media (min-width: 768px) {
   th, td {
-    padding: 1.25rem !important;
+    padding: 1rem !important;
   }
+}
+
+/* Espacio vertical entre elementos */
+.space-y-2 {
+  margin-top: 0.5rem !important;
+}
+.space-y-3 {
+  margin-top: 0.75rem !important;
+}
+.space-y-4 {
+  margin-top: 1rem !important;
+}
+.space-y-5 {
+  margin-top: 1.25rem !important;
+}
+.space-y-6 {
+  margin-top: 1.5rem !important;
+}
+
+/* Selector de sucursal específico */
+.bg-blue-50 {
+  padding: 1rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+/* Títulos */
+h1, .h1 {
+  margin-bottom: 1.25rem !important;
+}
+
+h2, .h2 {
+  margin-bottom: 1rem !important;
+}
+
+/* Radio buttons y checkboxes con más espacio */
+input[type="radio"],
+input[type="checkbox"] {
+  width: 1rem !important;
+  height: 1rem !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Badges de stock */
+.px-3.py-1.rounded-full {
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.75rem !important;
 }

@@ -142,7 +142,7 @@ export function Ventas() {
 
   return (
     <div className="w-full">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         {/* Título con más espacio inferior */}
         <h1 className="text-3xl md:text-4xl font-bold mb-10">🛒 Punto de Venta</h1>
         
