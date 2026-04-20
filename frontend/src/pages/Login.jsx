@@ -52,14 +52,16 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4">
       <div className="max-w-md w-full">
         {/* Logo más grande y centrado */}
-        <div className="text-center mb-10">
-          <img 
-            src="/imagenes/Logo Scribo.png" 
-            alt="Scribo Logo" 
-            className="w-32 h-32 mx-auto mb-5 object-contain"
-          />
-          <h1 className="text-3xl font-bold text-[#5a4a3a]">Scribo Stock</h1>
-          <p className="text-[#8a7a6a] text-base mt-2">Sistema de gestión de inventario</p>
+        <div className="flex flex-col items-center justify-center mb-10">
+        <div className="w-36 h-36 mb-4 flex items-center justify-center">
+            <img 
+              src="//imagenes/Logo Scribo.png" 
+              alt="Scribo Logo" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-[#5a4a3a] text-center">Scribo Stock</h1>
+          <p className="text-[#8a7a6a] text-base mt-2 text-center">Sistema de gestión de inventario</p>
         </div>
 
         {/* Formulario compacto */}

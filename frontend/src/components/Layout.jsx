@@ -46,12 +46,14 @@ export function Layout() {
             
             {/* Logo más grande */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
-              <img 
-                src="/imagenes/Logo Scribo.png" 
-                alt="Scribo Logo" 
-                className="w-10 h-10 md:w-12 md:h-12 object-contain"
-              />
-              <span className="text-lg md:text-xl font-bold text-[#5a4a3a] group-hover:text-[#c9a87b] transition">
+              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                <img 
+                  src="/imagenes/Logo Scribo.png" 
+                  alt="Scribo Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-base md:text-lg font-bold text-[#5a4a3a] group-hover:text-[#c9a87b] transition">
                 Scribo Stock
               </span>
             </Link>

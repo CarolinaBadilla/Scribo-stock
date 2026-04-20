@@ -197,22 +197,24 @@ export function ModalEditarProducto({ producto, tipo, onClose, onActualizar }) {
               </div>
             </div>
             
-                <div className="flex gap-3 pt-4 mt-4 border-t border-[#e2d8cc]">
+               <div className="mt-6 pt-4 border-t border-[#e2d8cc]">
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-[#e2d8cc] rounded-lg hover:bg-[#ede5d9] transition text-[#5a4a3a]"
+                  className="flex-1 px-4 py-2 border border-[#e2d8cc] rounded-lg hover:bg-[#ede5d9] transition text-[#5a4a3a] text-sm font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-[#c9a87b] text-white py-2 rounded-lg hover:bg-[#a8865d] transition disabled:opacity-50"
+                  className="flex-1 bg-[#c9a87b] text-white py-2 rounded-lg hover:bg-[#a8865d] transition disabled:opacity-50 text-sm font-medium"
                 >
                   {loading ? 'Guardando...' : '💾 Guardar cambios'}
                 </button>
               </div>
+            </div>
           </form>
         </div>
       </div>

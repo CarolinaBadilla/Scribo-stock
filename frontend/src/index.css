@@ -240,20 +240,16 @@ h2, .h2 {
 
 /* Badges de stock - vintage pero distinguibles */
 .bg-blue-500 { 
-  background-color: #7d8a6e !important; /* Verde oliva para ≥15 */
-  color: #fefcf8 !important;
+  background-color: #3b82f6 !important; /* Azul vibrante para ≥15 */
 }
 .bg-green-500 { 
-  background-color: #9bae7a !important; /* Verde claro para 6-14 */
-  color: #fefcf8 !important;
+  background-color: #22c55e !important; /* Verde vibrante para 6-14 */
 }
 .bg-yellow-500 { 
-  background-color: #d4b87a !important; /* Mostaza para 1-5 */
-  color: #5a4a3a !important;
+  background-color: #eab308 !important; /* Amarillo vibrante para 1-5 */
 }
 .bg-red-500 { 
-  background-color: #c97a6a !important; /* Terracota para 0 */
-  color: #fefcf8 !important;
+  background-color: #ef4444 !important; /* Rojo vibrante para 0 */
 }
 
 .px-3.py-1.rounded-full {
