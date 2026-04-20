@@ -233,3 +233,15 @@ input[type="checkbox"] {
   padding: 0.25rem 0.75rem !important;
   font-size: 0.75rem !important;
 }
+
+/* Agregar al final de index.css */
+/* Más espacio arriba del primer elemento después del navbar */
+main > div > :first-child {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  main > div > :first-child {
+    margin-top: 1rem;
+  }
+}
