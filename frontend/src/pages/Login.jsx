@@ -49,21 +49,21 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#faf7f2] px-4">
       <div className="max-w-md w-full">
         {/* Logo y nombre */}
         <div className="text-center mb-8">
           <img 
-              src="/imagenes/Logo Scribo.png" 
+              src="../imagenes/Logo Scribo.png" 
               alt="Scribo Logo" 
               className="w-16 h-16 mx-auto mb-3 object-contain"
             />
-          <h1 className="text-3xl font-bold text-gray-800">Librería Stock</h1>
-          <p className="text-gray-500 mt-1">Sistema de gestión de inventario</p>
+          <h1 className="text-2xl font-bold text-[#5c4b3a]">Librería Stock</h1>
+          <p className="text-[#8b7355] text-sm mt-1">Sistema de gestión de inventario</p>
         </div>
 
         {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#e8e0d5] p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -102,17 +102,12 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2.5 rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+              className="w-full bg-[#d4a373] text-white py-2.5 rounded-lg font-medium hover:bg-[#b5835a] transition"
             >
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Sistema de gestión para librerías
-        </p>
       </div>
     </div>
   );

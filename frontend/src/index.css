@@ -1,6 +1,22 @@
 /* src/index.css */
 @import "tailwindcss";
 
+/* ============================================
+   COLORES VINTAGE
+   ============================================ */
+:root {
+  --bg-cream: #faf7f2;
+  --card-white: #ffffff;
+  --border-vintage: #e8e0d5;
+  --mustard: #d4a373;
+  --mustard-dark: #b5835a;
+  --terracota: #c17a6e;
+  --olive: #8b9a6e;
+  --text-dark: #5c4b3a;
+  --text-medium: #8b7355;
+  --bg-warm: #f5efe8;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,24 +30,25 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc;
+  background-color: #faf7f2;
+  color: #5c4b3a;
 }
 
-/* Scrollbar */
+/* Scrollbar vintage */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: #e8e0d5;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: #d4a373;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #b5835a;
 }
 
 /* Animaciones */
@@ -79,7 +96,7 @@ main > div > *:last-child {
   }
 }
 
-/* Reducir márgenes de Tailwind */
+/* Reducir márgenes */
 .mb-1 { margin-bottom: 0.25rem !important; }
 .mb-2 { margin-bottom: 0.375rem !important; }
 .mb-3 { margin-bottom: 0.5rem !important; }
@@ -89,12 +106,15 @@ main > div > *:last-child {
 .mb-8 { margin-bottom: 1.25rem !important; }
 .mb-10 { margin-bottom: 1.5rem !important; }
 
-/* Reducir padding en tarjetas */
+/* Tarjetas vintage */
 .rounded-xl,
 .rounded-2xl,
 .bg-white.rounded-xl,
 .bg-white.rounded-2xl {
+  background-color: #ffffff !important;
+  border: 1px solid #e8e0d5 !important;
   padding: 0.875rem !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
 }
 @media (min-width: 768px) {
   .rounded-xl,
@@ -105,21 +125,56 @@ main > div > *:last-child {
   }
 }
 
-/* Botones más compactos */
+/* Botones vintage */
 button,
 .btn {
   padding: 0.375rem 0.875rem !important;
   font-size: 0.8125rem !important;
-}
-button.bg-green-500,
-button.bg-blue-500 {
-  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
 }
 
-/* Inputs más compactos */
-input, select {
+button.bg-green-500,
+button.bg-green-600 {
+  background-color: #8b9a6e !important;
+}
+button.bg-green-500:hover,
+button.bg-green-600:hover {
+  background-color: #7a8a5e !important;
+}
+
+button.bg-blue-500,
+button.bg-blue-600 {
+  background-color: #d4a373 !important;
+}
+button.bg-blue-500:hover,
+button.bg-blue-600:hover {
+  background-color: #b5835a !important;
+}
+
+button.bg-red-500,
+button.bg-red-600 {
+  background-color: #c17a6e !important;
+}
+button.bg-red-500:hover,
+button.bg-red-600:hover {
+  background-color: #a86b60 !important;
+}
+
+/* Inputs vintage */
+input, select, textarea {
   padding: 0.375rem 0.625rem !important;
   font-size: 0.8125rem !important;
+  border: 1px solid #e8e0d5 !important;
+  border-radius: 0.5rem !important;
+  background-color: #ffffff !important;
+  color: #5c4b3a !important;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: #d4a373 !important;
+  ring: 2px solid #d4a373 !important;
 }
 
 /* Gap en grids reducido */
@@ -132,9 +187,15 @@ input, select {
   }
 }
 
-/* Tablas más compactas */
+/* Tablas vintage */
 th, td {
   padding: 0.5rem 0.75rem !important;
+  border-bottom: 1px solid #e8e0d5 !important;
+}
+th {
+  background-color: #faf7f2 !important;
+  color: #5c4b3a !important;
+  font-weight: 600 !important;
 }
 @media (min-width: 768px) {
   th, td {
@@ -142,29 +203,25 @@ th, td {
   }
 }
 
-/* Espacio vertical reducido */
-.space-y-1 { margin-top: 0.125rem !important; }
-.space-y-2 { margin-top: 0.25rem !important; }
-.space-y-3 { margin-top: 0.375rem !important; }
-.space-y-4 { margin-top: 0.5rem !important; }
-.space-y-5 { margin-top: 0.625rem !important; }
-.space-y-6 { margin-top: 0.75rem !important; }
-.space-y-8 { margin-top: 1rem !important; }
-
 /* Selector de sucursal */
 .bg-blue-50 {
+  background-color: #f5efe8 !important;
+  border: 1px solid #e8e0d5 !important;
   padding: 0.75rem !important;
   margin-bottom: 1rem !important;
+  border-radius: 0.75rem !important;
 }
 
 /* Títulos */
 h1, .h1 {
   margin-bottom: 0.75rem !important;
   font-size: 1.5rem !important;
+  color: #5c4b3a !important;
 }
 h2, .h2 {
   margin-bottom: 0.625rem !important;
   font-size: 1.25rem !important;
+  color: #5c4b3a !important;
 }
 
 /* Badges de stock */
@@ -173,7 +230,11 @@ h2, .h2 {
   font-size: 0.6875rem !important;
 }
 
-/* Navbar - más compacto y con espacio en bordes */
+/* Navbar vintage */
+nav {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e8e0d5 !important;
+}
 nav > div {
   padding-left: 0.75rem !important;
   padding-right: 0.75rem !important;
@@ -191,9 +252,18 @@ nav > div {
   }
 }
 
-/* Altura del navbar reducida */
+/* Altura navbar */
 nav .h-16 {
   height: 3.5rem !important;
+}
+
+/* Links del navbar */
+nav a {
+  color: #8b7355 !important;
+}
+nav a:hover {
+  color: #d4a373 !important;
+  background-color: #faf7f2 !important;
 }
 
 /* Espacio arriba del contenido */
@@ -206,4 +276,19 @@ main {
 .border.rounded-lg.p-3 {
   padding: 0.625rem !important;
   margin-bottom: 0.5rem !important;
+  border-color: #e8e0d5 !important;
+}
+
+/* Leyenda de colores vintage */
+.bg-blue-500 { background-color: #d4a373 !important; }
+.bg-green-500 { background-color: #8b9a6e !important; }
+.bg-yellow-500 { background-color: #e6c87a !important; }
+.bg-red-500 { background-color: #c17a6e !important; }
+
+/* Textos secundarios */
+.text-gray-500, .text-gray-600 {
+  color: #8b7355 !important;
+}
+.text-gray-700 {
+  color: #5c4b3a !important;
 }

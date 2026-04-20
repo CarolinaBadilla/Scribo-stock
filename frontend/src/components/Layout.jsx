@@ -23,7 +23,7 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <nav className="bg-white border-b border-[#e8e0d5] sticky top-0 z-10">
         <div className="w-full px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             
@@ -31,12 +31,12 @@ export function Layout() {
             <Link to="/" className="flex items-center gap-2 group shrink-0">
               {/* Logo imagen */}
               <img 
-                src="/imagenes/Logo Scribo.png" 
+                src="../imagenes/Logo Scribo.png" 
                 alt="Scribo Logo" 
                 className="w-8 h-8 md:w-9 md:h-9 object-contain"
               />
               {/* Nombre */}
-              <span className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-blue-600 transition">
+              <span className="text-lg md:text-xl font-bold text-[#5c4b3a] group-hover:text-[#d4a373] transition">
                 Scribo Stock
               </span>
             </Link>
