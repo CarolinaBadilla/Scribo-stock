@@ -50,6 +50,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4">
+      <div className="w-full max-w-md bg-[#fefcf8] rounded-2xl shadow-md border border-[#e2d8cc] p-8">
       <div className="max-w-md w-full">
         {/* Logo más grande y centrado */}
         <div className="flex flex-col items-center justify-center mb-10">
@@ -111,6 +112,7 @@ export function Login() {
           </form>
         </div>
       </div>
+    </div>
     </div>
   );
 }
