@@ -47,7 +47,7 @@ export function Layout() {
             {/* Logo más grande */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
               <img 
-                src="/images/scribo-logo.png" 
+                src="/imagenes/Logo Scribo.png" 
                 alt="Scribo Logo" 
                 className="w-10 h-10 md:w-12 md:h-12 object-contain"
               />

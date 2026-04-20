@@ -54,7 +54,7 @@ export function Login() {
         {/* Logo más grande y centrado */}
         <div className="text-center mb-10">
           <img 
-            src="/images/scribo-logo.png" 
+            src="/imagenes/Logo Scribo.png" 
             alt="Scribo Logo" 
             className="w-32 h-32 mx-auto mb-5 object-contain"
           />

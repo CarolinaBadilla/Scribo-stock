@@ -2,19 +2,21 @@
 @import "tailwindcss";
 
 /* ============================================
-   COLORES VINTAGE
+   COLORES VINTAGE APAGADOS
    ============================================ */
 :root {
-  --bg-cream: #faf7f2;
-  --card-white: #ffffff;
-  --border-vintage: #e8e0d5;
-  --mustard: #d4a373;
-  --mustard-dark: #b5835a;
-  --terracota: #c17a6e;
-  --olive: #8b9a6e;
-  --text-dark: #5c4b3a;
-  --text-medium: #8b7355;
-  --bg-warm: #f5efe8;
+  --bg-cream: #f5f0e8;
+  --card-white: #fefcf8;
+  --border-vintage: #e2d8cc;
+  --mustard-soft: #c9a87b;
+  --mustard-dark: #a8865d;
+  --terracota-soft: #b87a6a;
+  --olive-soft: #7d8a6e;
+  --text-dark: #5a4a3a;
+  --text-medium: #8a7a6a;
+  --bg-warm: #ede5d9;
+  --sucursal-bg: #e8dfd3;
+  --sucursal-border: #d4c8b8;
 }
 
 * {
@@ -30,8 +32,8 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background-color: #faf7f2;
-  color: #5c4b3a;
+  background-color: #f5f0e8;
+  color: #5a4a3a;
 }
 
 /* Scrollbar vintage */
@@ -40,15 +42,15 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #e8e0d5;
+  background: #e2d8cc;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d4a373;
+  background: #c9a87b;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b5835a;
+  background: #a8865d;
 }
 
 /* Animaciones */
@@ -111,8 +113,8 @@ main > div > *:last-child {
 .rounded-2xl,
 .bg-white.rounded-xl,
 .bg-white.rounded-2xl {
-  background-color: #ffffff !important;
-  border: 1px solid #e8e0d5 !important;
+  background-color: #fefcf8 !important;
+  border: 1px solid #e2d8cc !important;
   padding: 0.875rem !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
 }
@@ -125,7 +127,7 @@ main > div > *:last-child {
   }
 }
 
-/* Botones vintage */
+/* Botones vintage apagados */
 button,
 .btn {
   padding: 0.375rem 0.875rem !important;
@@ -137,44 +139,44 @@ button,
 
 button.bg-green-500,
 button.bg-green-600 {
-  background-color: #8b9a6e !important;
+  background-color: #7d8a6e !important;
 }
 button.bg-green-500:hover,
 button.bg-green-600:hover {
-  background-color: #7a8a5e !important;
+  background-color: #6d7a5e !important;
 }
 
 button.bg-blue-500,
 button.bg-blue-600 {
-  background-color: #d4a373 !important;
+  background-color: #c9a87b !important;
 }
 button.bg-blue-500:hover,
 button.bg-blue-600:hover {
-  background-color: #b5835a !important;
+  background-color: #a8865d !important;
 }
 
 button.bg-red-500,
 button.bg-red-600 {
-  background-color: #c17a6e !important;
+  background-color: #b87a6a !important;
 }
 button.bg-red-500:hover,
 button.bg-red-600:hover {
-  background-color: #a86b60 !important;
+  background-color: #a06a5a !important;
 }
 
 /* Inputs vintage */
 input, select, textarea {
   padding: 0.375rem 0.625rem !important;
   font-size: 0.8125rem !important;
-  border: 1px solid #e8e0d5 !important;
+  border: 1px solid #e2d8cc !important;
   border-radius: 0.5rem !important;
-  background-color: #ffffff !important;
-  color: #5c4b3a !important;
+  background-color: #fefcf8 !important;
+  color: #5a4a3a !important;
 }
 input:focus, select:focus, textarea:focus {
   outline: none !important;
-  border-color: #d4a373 !important;
-  ring: 2px solid #d4a373 !important;
+  border-color: #c9a87b !important;
+  ring: 2px solid #c9a87b !important;
 }
 
 /* Gap en grids reducido */
@@ -190,11 +192,11 @@ input:focus, select:focus, textarea:focus {
 /* Tablas vintage */
 th, td {
   padding: 0.5rem 0.75rem !important;
-  border-bottom: 1px solid #e8e0d5 !important;
+  border-bottom: 1px solid #e2d8cc !important;
 }
 th {
-  background-color: #faf7f2 !important;
-  color: #5c4b3a !important;
+  background-color: #ede5d9 !important;
+  color: #5a4a3a !important;
   font-weight: 600 !important;
 }
 @media (min-width: 768px) {
@@ -203,36 +205,67 @@ th {
   }
 }
 
-/* Selector de sucursal */
-.bg-blue-50 {
-  background-color: #f5efe8 !important;
-  border: 1px solid #e8e0d5 !important;
-  padding: 0.75rem !important;
-  margin-bottom: 1rem !important;
+/* Selector de sucursal - más claro y distinguible */
+.bg-blue-50,
+.bg-blue-50.rounded-xl,
+.bg-blue-50.rounded-2xl {
+  background-color: #e8dfd3 !important;
+  border: 1px solid #d4c8b8 !important;
   border-radius: 0.75rem !important;
+  padding: 0.875rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.bg-blue-50 select {
+  background-color: #fefcf8 !important;
+  border: 1px solid #d4c8b8 !important;
+}
+
+.bg-blue-50 label {
+  color: #5a4a3a !important;
+  font-weight: 500 !important;
 }
 
 /* Títulos */
 h1, .h1 {
   margin-bottom: 0.75rem !important;
   font-size: 1.5rem !important;
-  color: #5c4b3a !important;
+  color: #5a4a3a !important;
 }
 h2, .h2 {
   margin-bottom: 0.625rem !important;
   font-size: 1.25rem !important;
-  color: #5c4b3a !important;
+  color: #5a4a3a !important;
 }
 
-/* Badges de stock */
+/* Badges de stock - vintage pero distinguibles */
+.bg-blue-500 { 
+  background-color: #7d8a6e !important; /* Verde oliva para ≥15 */
+  color: #fefcf8 !important;
+}
+.bg-green-500 { 
+  background-color: #9bae7a !important; /* Verde claro para 6-14 */
+  color: #fefcf8 !important;
+}
+.bg-yellow-500 { 
+  background-color: #d4b87a !important; /* Mostaza para 1-5 */
+  color: #5a4a3a !important;
+}
+.bg-red-500 { 
+  background-color: #c97a6a !important; /* Terracota para 0 */
+  color: #fefcf8 !important;
+}
+
 .px-3.py-1.rounded-full {
   font-weight: 600 !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.75rem !important;
 }
 
 /* Navbar vintage */
 nav {
-  background-color: #ffffff !important;
-  border-bottom: 1px solid #e8e0d5 !important;
+  background-color: #fefcf8 !important;
+  border-bottom: 1px solid #e2d8cc !important;
 }
 nav > div {
   padding-left: 0.75rem !important;
@@ -258,11 +291,17 @@ nav .h-16 {
 
 /* Links del navbar */
 nav a {
-  color: #8b7355 !important;
+  color: #8a7a6a !important;
 }
 nav a:hover {
-  color: #d4a373 !important;
-  background-color: #faf7f2 !important;
+  color: #c9a87b !important;
+  background-color: #ede5d9 !important;
+}
+
+/* Link activo en navbar */
+nav a.active {
+  background-color: #c9a87b !important;
+  color: #fefcf8 !important;
 }
 
 /* Espacio arriba del contenido */
@@ -275,34 +314,73 @@ main {
 .border.rounded-lg.p-3 {
   padding: 0.625rem !important;
   margin-bottom: 0.5rem !important;
-  border-color: #e8e0d5 !important;
-}
-
-.bg-blue-500 { 
-  background-color: #3b82f6 !important; /* Azul vibrante para ≥15 */
-}
-.bg-green-500 { 
-  background-color: #22c55e !important; /* Verde vibrante para 6-14 */
-}
-.bg-yellow-500 { 
-  background-color: #eab308 !important; /* Amarillo vibrante para 1-5 */
-}
-.bg-red-500 { 
-  background-color: #ef4444 !important; /* Rojo vibrante para 0 */
+  border-color: #e2d8cc !important;
 }
 
 /* Textos secundarios */
 .text-gray-500, .text-gray-600 {
-  color: #8b7355 !important;
+  color: #8a7a6a !important;
 }
 .text-gray-700 {
-  color: #5c4b3a !important;
+  color: #5a4a3a !important;
 }
 
+/* Leyenda de colores */
 .leyenda-color {
   display: inline-block;
   width: 1rem;
   height: 1rem;
   border-radius: 0.25rem;
   margin-right: 0.5rem;
+}
+
+/* ============================================
+   MODALES - ESPACIADO MEJORADO
+   ============================================ */
+
+/* Fondo del modal (overlay) */
+.fixed.inset-0.bg-black {
+  background-color: rgba(90, 74, 58, 0.6) !important;
+}
+
+/* Contenido del modal */
+.modal-content {
+  background-color: #fefcf8 !important;
+  border: 1px solid #e2d8cc !important;
+}
+
+/* Separación entre inputs y botones en modales */
+.modal-form .space-y-4 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+.modal-form .mt-6 {
+  margin-top: 1.5rem !important;
+}
+
+.modal-form .pt-4 {
+  padding-top: 1rem !important;
+}
+
+.modal-form .border-t {
+  border-top-color: #e2d8cc !important;
+}
+
+/* Botones del modal */
+.modal-form button {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Inputs dentro del modal */
+.modal-form input,
+.modal-form select {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Títulos del modal */
+.modal-form h2 {
+  font-size: 1.25rem !important;
+  margin-bottom: 0.75rem !important;
 }
