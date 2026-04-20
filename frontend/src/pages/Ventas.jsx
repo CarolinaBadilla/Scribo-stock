@@ -74,6 +74,27 @@ export function Ventas() {
     });
   };
 
+  const actualizarCantidad = (index, nuevaCantidad) => {
+    if (nuevaCantidad < 1) return;
+    if (nuevaCantidad > carrito[index].stockDisponible) {
+      alert(`Solo hay ${carrito[index].stockDisponible} unidades disponibles`);
+      return;
+    }
+    const nuevoCarrito = [...carrito];
+    nuevoCarrito[index].cantidad = nuevaCantidad;
+    setCarrito(nuevoCarrito);
+  };
+
+  const actualizarDescuento = (index, descuento) => {
+    const nuevoCarrito = [...carrito];
+    nuevoCarrito[index].descuento = Math.min(100, Math.max(0, descuento));
+    setCarrito(nuevoCarrito);
+  };
+
+  const eliminarItem = (index) => {
+    setCarrito(carrito.filter((_, i) => i !== index));
+  };
+
   const calcularTotal = () => {
     return carrito.reduce((sum, item) => {
       const precioBase = tipoPago === 'efectivo' ? (item.precioEfectivo || 0) : (item.precioTarjeta || 0);
@@ -120,16 +141,18 @@ export function Ventas() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">🛒 Punto de Venta</h1>
+    <div className="w-full">
+      <div className="max-w-6xl mx-auto">
+        {/* Título con más espacio inferior */}
+        <h1 className="text-3xl md:text-4xl font-bold mb-10">🛒 Punto de Venta</h1>
         
-        <div className="mb-6 p-4 bg-blue-50 rounded-xl">
-          <label className="font-bold mr-3">📍 Sucursal:</label>
+        {/* Selector de sucursal - más padding y margen */}
+        <div className="mb-10 p-6 bg-blue-50 rounded-2xl border border-blue-100">
+          <label className="font-bold text-lg mr-4">📍 Sucursal:</label>
           <select
             value={sucursalId || ''}
             onChange={(e) => setSucursalId(parseInt(e.target.value))}
-            className="p-2 border rounded-lg"
+            className="p-3 border rounded-xl text-base"
           >
             {sucursales.map(suc => (
               <option key={suc.id} value={suc.id}>{suc.nombre}</option>
@@ -137,114 +160,113 @@ export function Ventas() {
           </select>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-5">
+        {/* Grid con más espacio entre columnas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
+          
+          {/* Columna izquierda */}
+          <div className="space-y-8">
+            {/* Escáner */}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
               <EscanerInput 
                 onProductoEncontrado={handleProductoEncontrado} 
                 placeholder="Escanea el código de barras..."
               />
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm p-5">
-              <h2 className="text-lg font-bold mb-4">💳 Método de pago</h2>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1">
+            {/* Método de pago */}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
+              <h2 className="text-xl font-bold mb-6">💳 Método de pago</h2>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 flex-1">
                   <input
                     type="radio"
                     value="efectivo"
                     checked={tipoPago === 'efectivo'}
                     onChange={() => setTipoPago('efectivo')}
+                    className="w-5 h-5"
                   />
-                  <span className="font-medium">💰 Efectivo</span>
+                  <span className="font-medium text-lg">💰 Efectivo</span>
                 </label>
-                <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1">
+                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 flex-1">
                   <input
                     type="radio"
                     value="tarjeta"
                     checked={tipoPago === 'tarjeta'}
                     onChange={() => setTipoPago('tarjeta')}
+                    className="w-5 h-5"
                   />
-                  <span className="font-medium">💳 Tarjeta</span>
+                  <span className="font-medium text-lg">💳 Tarjeta</span>
                 </label>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <h2 className="text-lg font-bold mb-4">🛍️ Carrito</h2>
+          {/* Columna derecha - Carrito */}
+          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
+            <h2 className="text-2xl font-bold mb-6 text-center">🛍️ Carrito</h2>
             
             {carrito.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-4xl mb-2">🛒</p>
-                <p>No hay productos en el carrito</p>
-                <p className="text-sm mt-1">Escanea un código para comenzar</p>
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-6xl mb-4">🛒</p>
+                <p className="text-xl">No hay productos en el carrito</p>
+                <p className="text-base mt-3">Escanea un código para comenzar</p>
               </div>
             ) : (
               <>
-                <div className="space-y-3 max-h-96 overflow-y-auto mb-4">
+                <div className="space-y-4 max-h-96 overflow-y-auto mb-6 pr-2">
                   {carrito.map((item, index) => (
-                    <div key={index} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start">
+                    <div key={index} className="border rounded-xl p-5">
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="font-bold">{item.nombre}</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="font-bold text-lg">{item.nombre}</p>
+                          <p className="text-base text-gray-600 mt-1">
                             {formatMoney(tipoPago === 'efectivo' ? item.precioEfectivo : item.precioTarjeta)} c/u
                           </p>
                         </div>
                         <button
-                          onClick={() => setCarrito(carrito.filter((_, i) => i !== index))}
-                          className="text-red-500 hover:text-red-700"
+                          onClick={() => eliminarItem(index)}
+                          className="text-red-500 hover:text-red-700 text-xl"
                         >
                           ✕
                         </button>
                       </div>
-                      <div className="flex gap-4 mt-2">
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm">Cant:</label>
+                      <div className="flex gap-6 mt-3">
+                        <div className="flex items-center gap-3">
+                          <label className="text-base font-medium">Cantidad:</label>
                           <input
                             type="number"
                             value={item.cantidad}
-                            onChange={(e) => {
-                              const nuevaCantidad = parseInt(e.target.value);
-                              if (nuevaCantidad > 0 && nuevaCantidad <= item.stockDisponible) {
-                                const nuevoCarrito = [...carrito];
-                                nuevoCarrito[index].cantidad = nuevaCantidad;
-                                setCarrito(nuevoCarrito);
-                              }
-                            }}
-                            className="w-16 p-1 border rounded text-center"
+                            onChange={(e) => actualizarCantidad(index, parseInt(e.target.value))}
+                            className="w-20 p-2 border rounded-lg text-center text-base"
                             min="1"
+                            max={item.stockDisponible}
                           />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm">Dto %:</label>
+                        <div className="flex items-center gap-3">
+                          <label className="text-base font-medium">Descuento:</label>
                           <input
                             type="number"
                             value={item.descuento}
-                            onChange={(e) => {
-                              const nuevoCarrito = [...carrito];
-                              nuevoCarrito[index].descuento = Math.min(100, parseInt(e.target.value) || 0);
-                              setCarrito(nuevoCarrito);
-                            }}
-                            className="w-16 p-1 border rounded text-center"
+                            onChange={(e) => actualizarDescuento(index, parseInt(e.target.value))}
+                            className="w-20 p-2 border rounded-lg text-center text-base"
                             min="0"
                             max="100"
                           />
+                          <span className="text-base">%</span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
                 
-                <div className="border-t pt-4 space-y-3">
-                  <div className="flex justify-between text-xl font-bold">
+                <div className="border-t pt-6 space-y-5">
+                  <div className="flex justify-between text-2xl font-bold">
                     <span>Total:</span>
                     <span className="text-blue-600">{formatMoney(calcularTotal())}</span>
                   </div>
                   <button
                     onClick={handleFinalizarVenta}
-                    className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition"
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all"
                   >
                     ✅ Finalizar venta
                   </button>
