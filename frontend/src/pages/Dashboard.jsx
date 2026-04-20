@@ -141,25 +141,25 @@ export function Dashboard() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b">
-                  <th className="text-left p-3 font-bold">Tipo</th>
-                  <th className="text-left p-3 font-bold">Producto</th>
-                  <th className="text-left p-3 font-bold">Detalle</th>
-                  <th className="text-center p-3 font-bold">Stock</th>
-                  <th className="text-right p-3 font-bold">Precio Efectivo</th>
-                  <th className="text-right p-3 font-bold">Precio Tarjeta</th>
-                  <th className="text-center p-3 font-bold">Acciones</th>
+                  <th className="text-left p-5 font-bold">Tipo</th>
+                  <th className="text-left p-5 font-bold">Producto</th>
+                  <th className="text-left p-5 font-bold">Detalle</th>
+                  <th className="text-center p-5 font-bold">Stock</th>
+                  <th className="text-right p-5 font-bold">Precio Efectivo</th>
+                  <th className="text-right p-5 font-bold">Precio Tarjeta</th>
+                  <th className="text-center p-5 font-bold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {stock.map((producto, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="p-3">{producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}</td>
-                    <td className="p-3 font-medium">{producto.nombre_producto || '-'}</td>
-                    <td className="p-3 text-gray-600">{producto.tipo_producto === 'libro' ? `✍️ ${producto.detalle || 'Sin autor'}` : `🏫 ${producto.detalle || 'Sin colegio'} | ${producto.talle || '-'} | ${producto.color || '-'}`}</td>
-                    <td className="p-3 text-center"><span className={`px-3 py-1 rounded-full text-sm font-bold ${producto.cantidad >= 15 ? 'bg-blue-500 text-white' : producto.cantidad >= 6 ? 'bg-green-500 text-white' : producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'}`}>{producto.cantidad || 0} und</span></td>
-                    <td className="p-3 text-right font-medium">{formatMoney(producto.precio_efectivo || 0)}</td>
-                    <td className="p-3 text-right font-medium">{formatMoney(producto.precio_tarjeta || 0)}</td>
-                    <td className="p-3 text-center">
+                    <td className="p-5">{producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}</td>
+                    <td className="p-5 font-medium">{producto.nombre_producto || '-'}</td>
+                    <td className="p-5 text-gray-600">{producto.tipo_producto === 'libro' ? `✍️ ${producto.detalle || 'Sin autor'}` : `🏫 ${producto.detalle || 'Sin colegio'} | ${producto.talle || '-'} | ${producto.color || '-'}`}</td>
+                    <td className="p-5 text-center"><span className={`px-3 py-1 rounded-full text-sm font-bold ${producto.cantidad >= 15 ? 'bg-blue-500 text-white' : producto.cantidad >= 6 ? 'bg-green-500 text-white' : producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'}`}>{producto.cantidad || 0} und</span></td>
+                    <td className="p-5 text-right font-medium">{formatMoney(producto.precio_efectivo || 0)}</td>
+                    <td className="p-5 text-right font-medium">{formatMoney(producto.precio_tarjeta || 0)}</td>
+                    <td className="p-5 text-center">
                       <div className="flex gap-2 justify-center">
                         <button 
                           onClick={() => {
