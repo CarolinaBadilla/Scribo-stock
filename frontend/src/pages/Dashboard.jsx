@@ -126,7 +126,7 @@ export function Dashboard() {
         <LeyendaColores />
         
         <div className="mb-6 space-y-3">
-          <input type="text" placeholder="🔍 Buscar por nombre, autor o colegio..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="w-full p-3 border rounded-lg text-lg" />
+          <input type="text" placeholder="🔍 Buscar por nombre de prenda o de libro" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="w-full p-3 border rounded-lg text-lg" />
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setFiltroTipo('todos')} className={`px-4 py-2 rounded transition ${filtroTipo === 'todos' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}>Todos</button>
             <button onClick={() => setFiltroTipo('libro')} className={`px-4 py-2 rounded transition ${filtroTipo === 'libro' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}>📚 Libros</button>

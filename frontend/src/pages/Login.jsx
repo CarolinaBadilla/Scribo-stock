@@ -49,52 +49,52 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#faf7f2] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4">
       <div className="max-w-md w-full">
-        {/* Logo y nombre */}
-        <div className="text-center mb-8">
+        {/* Logo más grande y centrado */}
+        <div className="text-center mb-10">
           <img 
-              src="/imagenes/Logo Scribo.png" 
-              alt="Scribo Logo" 
-              className="w-16 h-16 mx-auto mb-3 object-contain"
-            />
-          <h1 className="text-2xl font-bold text-[#5c4b3a]">Librería Stock</h1>
-          <p className="text-[#8b7355] text-sm mt-1">Sistema de gestión de inventario</p>
+            src="/images/scribo-logo.png" 
+            alt="Scribo Logo" 
+            className="w-32 h-32 mx-auto mb-5 object-contain"
+          />
+          <h1 className="text-3xl font-bold text-[#5a4a3a]">Scribo Stock</h1>
+          <p className="text-[#8a7a6a] text-base mt-2">Sistema de gestión de inventario</p>
         </div>
 
-        {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#e8e0d5] p-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Formulario compacto */}
+        <div className="bg-[#fefcf8] rounded-2xl shadow-sm border border-[#e2d8cc] p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#5a4a3a] mb-1">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-1.5 border border-[#e8e0d5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-2 border border-[#e2d8cc] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#c9a87b] focus:border-[#c9a87b] text-sm bg-[#fefcf8]"
                 placeholder="usuario@ejemplo.com"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#5a4a3a] mb-1">
                 Contraseña
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-1.5 border border-[#e8e0d5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-2 border border-[#e2d8cc] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#c9a87b] focus:border-[#c9a87b] text-sm bg-[#fefcf8]"
                 placeholder="••••••••"
                 required
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">
+              <div className="p-2 bg-red-50 text-red-600 rounded-lg text-sm border border-red-200">
                 {error}
               </div>
             )}
@@ -102,7 +102,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#d4a373] text-white py-2.5 rounded-lg font-medium hover:bg-[#b5835a] transition"
+              className="w-full bg-[#c9a87b] text-white py-2.5 rounded-lg font-medium hover:bg-[#a8865d] transition-all duration-200 disabled:opacity-50 text-base"
             >
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
