@@ -226,8 +226,7 @@ h2, .h2 {
 
 /* Badges de stock */
 .px-3.py-1.rounded-full {
-  padding: 0.1875rem 0.625rem !important;
-  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
 }
 
 /* Navbar vintage */
@@ -279,11 +278,18 @@ main {
   border-color: #e8e0d5 !important;
 }
 
-/* Leyenda de colores vintage */
-.bg-blue-500 { background-color: #d4a373 !important; }
-.bg-green-500 { background-color: #8b9a6e !important; }
-.bg-yellow-500 { background-color: #e6c87a !important; }
-.bg-red-500 { background-color: #c17a6e !important; }
+.bg-blue-500 { 
+  background-color: #3b82f6 !important; /* Azul vibrante para ≥15 */
+}
+.bg-green-500 { 
+  background-color: #22c55e !important; /* Verde vibrante para 6-14 */
+}
+.bg-yellow-500 { 
+  background-color: #eab308 !important; /* Amarillo vibrante para 1-5 */
+}
+.bg-red-500 { 
+  background-color: #ef4444 !important; /* Rojo vibrante para 0 */
+}
 
 /* Textos secundarios */
 .text-gray-500, .text-gray-600 {
@@ -291,4 +297,12 @@ main {
 }
 .text-gray-700 {
   color: #5c4b3a !important;
+}
+
+.leyenda-color {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  margin-right: 0.5rem;
 }

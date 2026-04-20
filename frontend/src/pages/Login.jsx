@@ -54,7 +54,7 @@ export function Login() {
         {/* Logo y nombre */}
         <div className="text-center mb-8">
           <img 
-              src="../imagenes/Logo Scribo.png" 
+              src="frontend\imagenes\Logo Scribo.png" 
               alt="Scribo Logo" 
               className="w-16 h-16 mx-auto mb-3 object-contain"
             />
@@ -73,7 +73,7 @@ export function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-1.5 border border-[#e8e0d5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="usuario@ejemplo.com"
                 required
               />
@@ -87,7 +87,7 @@ export function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-1.5 border border-[#e8e0d5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
                 required
               />
