@@ -96,3 +96,93 @@ form > * {
 form > *:last-child {
   margin-bottom: 0;
 }
+
+/* src/index.css - Agregar al FINAL del archivo */
+
+/* FORZAR ESPACIADO GLOBAL */
+body {
+  line-height: 1.6 !important;
+}
+
+/* Forzar más espacio en contenedores */
+#root > div > main > div {
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+@media (min-width: 768px) {
+  #root > div > main > div {
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  #root > div > main > div {
+    padding-left: 4rem !important;
+    padding-right: 4rem !important;
+  }
+}
+
+/* Forzar más espacio entre elementos */
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+.mb-6 {
+  margin-bottom: 2rem !important;
+}
+.mb-8 {
+  margin-bottom: 2.5rem !important;
+}
+.mb-10 {
+  margin-bottom: 3rem !important;
+}
+
+/* Forzar más padding en tarjetas */
+.rounded-xl,
+.rounded-2xl {
+  padding: 1.5rem !important;
+}
+
+@media (min-width: 768px) {
+  .rounded-xl,
+  .rounded-2xl {
+    padding: 2rem !important;
+  }
+}
+
+/* Forzar botones más grandes */
+button,
+.btn {
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+}
+
+/* Forzar inputs más grandes */
+input,
+select {
+  padding: 0.75rem 1rem !important;
+  font-size: 1rem !important;
+}
+
+/* Forzar gap en grids */
+.grid {
+  gap: 1.5rem !important;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    gap: 2rem !important;
+  }
+}
+
+/* Forzar espacio en tablas */
+th, td {
+  padding: 1rem !important;
+}
+
+@media (min-width: 768px) {
+  th, td {
+    padding: 1.25rem !important;
+  }
+}
