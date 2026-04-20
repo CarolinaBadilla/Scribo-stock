@@ -53,9 +53,11 @@ export function Login() {
       <div className="max-w-md w-full">
         {/* Logo y nombre */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-4">
-            <span className="text-white text-4xl">📚</span>
-          </div>
+          <img 
+              src="/images/Logo Scribo.png" 
+              alt="Scribo Logo" 
+              className="w-16 h-16 mx-auto mb-3 object-contain"
+            />
           <h1 className="text-3xl font-bold text-gray-800">Librería Stock</h1>
           <p className="text-gray-500 mt-1">Sistema de gestión de inventario</p>
         </div>
