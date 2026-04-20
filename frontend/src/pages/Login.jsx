@@ -54,7 +54,7 @@ export function Login() {
         {/* Logo y nombre */}
         <div className="text-center mb-8">
           <img 
-              src="frontend\imagenes\Logo Scribo.png" 
+              src="/imagenes/Logo Scribo.png" 
               alt="Scribo Logo" 
               className="w-16 h-16 mx-auto mb-3 object-contain"
             />

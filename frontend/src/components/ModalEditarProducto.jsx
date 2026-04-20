@@ -83,7 +83,7 @@ export function ModalEditarProducto({ producto, tipo, onClose, onActualizar }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-[#5a4a3a] bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-full overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -197,22 +197,22 @@ export function ModalEditarProducto({ producto, tipo, onClose, onActualizar }) {
               </div>
             </div>
             
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
-              >
-                {loading ? 'Guardando...' : '💾 Guardar cambios'}
-              </button>
-            </div>
+                <div className="flex gap-3 pt-4 mt-4 border-t border-[#e2d8cc]">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-[#e2d8cc] rounded-lg hover:bg-[#ede5d9] transition text-[#5a4a3a]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-[#c9a87b] text-white py-2 rounded-lg hover:bg-[#a8865d] transition disabled:opacity-50"
+                >
+                  {loading ? 'Guardando...' : '💾 Guardar cambios'}
+                </button>
+              </div>
           </form>
         </div>
       </div>
