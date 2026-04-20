@@ -55,7 +55,7 @@ export function Login() {
         <div className="flex flex-col items-center justify-center mb-10">
         <div className="w-36 h-36 mb-4 flex items-center justify-center">
             <img 
-              src="//imagenes/Logo Scribo.png" 
+              src="/imagenes/Logo Scribo.png" 
               alt="Scribo Logo" 
               className="w-full h-full object-contain"
             />
