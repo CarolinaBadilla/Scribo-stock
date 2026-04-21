@@ -9,7 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Compras } from './pages/Compras';
 import { Reportes } from './pages/Reportes';
 import { supabase } from './services/supabase';
-import { Toaster } from 'sonner';
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
