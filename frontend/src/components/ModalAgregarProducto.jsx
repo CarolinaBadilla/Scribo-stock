@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../services/supabase';
 
-export function ModalAgregarProducto({ onClose, onAgregar }) {
+export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
   const [tipo, setTipo] = useState('libro');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -95,24 +95,17 @@ export function ModalAgregarProducto({ onClose, onAgregar }) {
       }
 
       // Obtener sucursales
-      const { data: sucursales, error: sucError } = await supabase
-        .from('sucursales')
-        .select('id');
+       const { error: stockError } = await supabase
+        .from('stock')
+        .insert({
+          tipo_producto: tipoProducto,
+          producto_id: productoId,
+          sucursal_id: sucursalId,  // Usar la sucursal seleccionada
+          cantidad: 0,
+          stock_minimo: 5
+        });
       
-      if (sucError) throw sucError;
-      
-      // Crear stock para cada sucursal
-      for (const sucursal of sucursales) {
-        await supabase
-          .from('stock')
-          .insert({
-            tipo_producto: tipoProducto,
-            producto_id: productoId,
-            sucursal_id: sucursal.id,
-            cantidad: 0,
-            stock_minimo: 5
-          });
-      }
+      if (stockError) throw stockError;
 
       alert('✅ Producto agregado correctamente');
       onAgregar();

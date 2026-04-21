@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { EscanerInput } from '../components/EscanerInput';
 import { formatMoney } from '../utils/formatters';
 import api from '../services/api';
+const { emitStockUpdate, emitVentaRegistrada } = require('../socket');
 
 export function Ventas() {
   const [carrito, setCarrito] = useState([]);
@@ -34,14 +35,14 @@ export function Ventas() {
       const producto = response.data;
       
       if (producto.cantidad <= 0) {
-        alert(`❌ No hay stock de ${producto.nombre_producto}`);
+        toast.error(`❌ No hay stock de ${producto.nombre_producto}`);
         return;
       }
       
       agregarAlCarrito(producto);
     } catch (error) {
       if (error.response?.status === 404) {
-        alert('❌ Producto no encontrado');
+        toast.error('❌ Producto no encontrado');
       } else {
         console.error('Error:', error);
       }
@@ -128,7 +129,7 @@ export function Ventas() {
         usuarioId: user.id
       });
       
-      alert('✅ Venta registrada correctamente');
+      toast.success('✅ Venta registrada correctamente');
       setCarrito([]);
     } catch (error) {
       console.error('Error:', error);
