@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { EscanerInput } from '../components/EscanerInput';
 import { formatMoney } from '../utils/formatters';
 import api from '../services/api';
-
+import { toast } from 'sonner';
 
 export function Ventas() {
   const [carrito, setCarrito] = useState([]);
