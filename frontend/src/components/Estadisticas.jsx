@@ -141,12 +141,12 @@ export function Estadisticas({ sucursales = [] }) {
           <span className="text-xs bg-[#c9a87b] text-white px-2 py-1 rounded-full">Solo Administrador</span>
         </div>
 
-        <button
+        {/*<button
           onClick={() => exportarEstadisticasPDF('estadisticas-container', 'Reporte de Estadísticas - Scribo Stock')}
           className="flex items-center gap-2 px-3 py-1.5 bg-[#7d8a6e] text-white rounded-lg text-sm hover:bg-[#6d7a5e] transition"
         >
           📄 Exportar a PDF
-        </button>
+        </button>*/}
         
         {/* Filtro de sucursal */}
         {sucursales.length > 0 && (

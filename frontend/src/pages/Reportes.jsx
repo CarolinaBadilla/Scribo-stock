@@ -255,11 +255,11 @@ export function Reportes() {
         <h1 className="text-2xl md:text-3xl font-bold mb-6">📄 Reportes y Exportaciones</h1>
 
 
-        {/* {esJefe && (
+        {esJefe && (
           <div className="mb-8">
             <Estadisticas sucursales={sucursales} />
           </div>
-        )}*/}
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Panel de filtros */}
