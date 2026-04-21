@@ -7,6 +7,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { exportarEstadisticasPDF } from '../utils/exportPDF';
 
 export function Estadisticas({ sucursales = [] }) {
   const [productosMasVendidos, setProductosMasVendidos] = useState([]);
@@ -139,6 +140,13 @@ export function Estadisticas({ sucursales = [] }) {
           <h2 className="text-xl font-bold text-[#5a4a3a]">📊 Panel de Estadísticas</h2>
           <span className="text-xs bg-[#c9a87b] text-white px-2 py-1 rounded-full">Solo Administrador</span>
         </div>
+
+        <button
+          onClick={() => exportarEstadisticasPDF('estadisticas-container', 'Reporte de Estadísticas - Scribo Stock')}
+          className="flex items-center gap-2 px-3 py-1.5 bg-[#7d8a6e] text-white rounded-lg text-sm hover:bg-[#6d7a5e] transition"
+        >
+          📄 Exportar a PDF
+        </button>
         
         {/* Filtro de sucursal */}
         {sucursales.length > 0 && (
@@ -155,10 +163,13 @@ export function Estadisticas({ sucursales = [] }) {
         )}
       </div>
 
+      <div id="estadisticas-container" className="space-y-6">
+
       <div className="flex justify-end gap-2">
         <button onClick={() => setPeriodo('7d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '7d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>7 días</button>
         <button onClick={() => setPeriodo('30d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '30d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>30 días</button>
         <button onClick={() => setPeriodo('90d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '90d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>90 días</button>
+      </div>
       </div>
 
       {/* Productos más vendidos */}

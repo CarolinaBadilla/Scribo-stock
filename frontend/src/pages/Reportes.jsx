@@ -259,6 +259,20 @@ export function Reportes() {
             <Estadisticas sucursales={sucursales} />
           </div>
         )}
+
+        {esJefe && (
+          <div className="mb-8">
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => exportarEstadisticasPDF('estadisticas-container', 'Reporte de Estadísticas - Scribo Stock')}
+                className="flex items-center gap-2 px-4 py-2 bg-[#7d8a6e] text-white rounded-lg text-sm hover:bg-[#6d7a5e] transition"
+              >
+                📄 Exportar Estadísticas a PDF
+              </button>
+            </div>
+            <Estadisticas sucursales={sucursales} />
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Panel de filtros */}

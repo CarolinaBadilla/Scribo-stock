@@ -380,3 +380,29 @@ main {
   font-size: 1.25rem !important;
   margin-bottom: 0.75rem !important;
 }
+
+/* src/index.css - Agregar al final */
+@media print {
+  body {
+    background-color: white;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .bg-\[#fefcf8\] {
+    background-color: white !important;
+    box-shadow: none !important;
+  }
+  
+  button {
+    display: none !important;
+  }
+  
+  .rounded-2xl, .rounded-xl {
+    border-radius: 0 !important;
+  }
+}
