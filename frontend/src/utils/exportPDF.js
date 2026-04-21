@@ -3,29 +3,36 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export const exportarEstadisticasPDF = async (elementoId, titulo) => {
+  // Esperar un poco para asegurar que los gráficos están renderizados
   const elemento = document.getElementById(elementoId);
   
   if (!elemento) {
     console.error('Elemento no encontrado');
+    alert('No se encontró el elemento para exportar');
     return;
   }
 
-  try {
-    // Mostrar loading
-    const loadingToast = document.createElement('div');
-    loadingToast.className = 'fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    loadingToast.textContent = 'Generando PDF...';
-    document.body.appendChild(loadingToast);
+  // Mostrar loading
+  const loadingToast = document.createElement('div');
+  loadingToast.className = 'fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+  loadingToast.innerHTML = '📄 Generando PDF...';
+  document.body.appendChild(loadingToast);
 
-    // Capturar el elemento como canvas
+  try {
+    // Esperar a que los gráficos se rendericen
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Capturar el elemento
     const canvas = await html2canvas(elemento, {
       scale: 2,
-      backgroundColor: '#f5f0e8',
+      backgroundColor: '#ffffff',
       logging: false,
-      useCORS: true
+      useCORS: true,
+      allowTaint: false,
+      windowWidth: elemento.scrollWidth,
+      windowHeight: elemento.scrollHeight
     });
 
-    // Crear PDF
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -33,50 +40,41 @@ export const exportarEstadisticasPDF = async (elementoId, titulo) => {
       format: 'a4'
     });
 
-    const imgWidth = 190; // mm
-    const pageHeight = 297; // mm
+    const imgWidth = 190;
+    const pageHeight = 277;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 10;
+    let position = 20;
 
-    // Agregar título
-    pdf.setFontSize(18);
+    // Título
+    pdf.setFontSize(16);
     pdf.setTextColor(90, 74, 58);
-    pdf.text(titulo, 105, 20, { align: 'center' });
+    pdf.text(titulo, 105, 15, { align: 'center' });
     
-    // Agregar fecha
+    // Fecha
     pdf.setFontSize(10);
     pdf.setTextColor(138, 122, 106);
     const fechaActual = new Date().toLocaleDateString('es-AR');
-    pdf.text(`Generado: ${fechaActual}`, 105, 30, { align: 'center' });
+    pdf.text(`Generado: ${fechaActual}`, 105, 22, { align: 'center' });
 
-    // Agregar la imagen al PDF
-    pdf.addImage(imgData, 'PNG', 10, 40, imgWidth, imgHeight);
-    heightLeft -= (pageHeight - 50);
-
-    // Si hay más contenido, agregar nuevas páginas
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - 20);
-    }
-
-    // Guardar PDF
-    pdf.save(`estadisticas_${titulo.replace(/\s/g, '_')}_${fechaActual}.pdf`);
+    // Agregar imagen
+    pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
     
-    // Remover loading
+    // Guardar
+    const fechaArchivo = new Date().toISOString().split('T')[0].replace(/-/g, '_');
+    pdf.save(`estadisticas_${fechaArchivo}.pdf`);
+    
     loadingToast.remove();
     
-    // Mostrar éxito
+    // Toast de éxito
     const successToast = document.createElement('div');
     successToast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    successToast.textContent = '✅ PDF exportado correctamente';
+    successToast.innerHTML = '✅ PDF generado correctamente';
     document.body.appendChild(successToast);
     setTimeout(() => successToast.remove(), 3000);
     
   } catch (error) {
     console.error('Error al generar PDF:', error);
-    alert('Error al generar el PDF');
+    loadingToast.remove();
+    alert('Error al generar el PDF: ' + error.message);
   }
 };

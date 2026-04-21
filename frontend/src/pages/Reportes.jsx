@@ -254,11 +254,6 @@ export function Reportes() {
       <div className="max-w-full mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">📄 Reportes y Exportaciones</h1>
 
-        {esJefe && (
-          <div className="mb-8">
-            <Estadisticas sucursales={sucursales} />
-          </div>
-        )}
 
         {esJefe && (
           <div className="mb-8">
