@@ -2,6 +2,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const http = require('http');
+const { initSocket } = require('./socket');
 
 // Cargar variables de entorno
 dotenv.config();
@@ -15,6 +17,8 @@ const reportesRoutes = require('./routes/reportes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+initSocket(server);
 
 // Configurar CORS correctamente
 const allowedOrigins = [
@@ -70,7 +74,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'API de Librería Stock funcionando' });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📊 CORS permitiendo orígenes:`, allowedOrigins);
+  console.log(`🔌 WebSocket habilitado`);
 });
