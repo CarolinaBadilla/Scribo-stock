@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { EscanerInput } from '../components/EscanerInput';
 import { formatMoney } from '../utils/formatters';
 import api from '../services/api';
-const { emitStockUpdate, emitVentaRegistrada } = require('../socket');
+
 
 export function Ventas() {
   const [carrito, setCarrito] = useState([]);
