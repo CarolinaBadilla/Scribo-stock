@@ -115,11 +115,6 @@ export function Dashboard() {
           <button onClick={() => setMostrarAgregar(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2 transition">➕ Nuevo producto</button>
         </div>
 
-        <div className="mb-4 p-4 bg-yellow-200 rounded-xl">
-          <p className="font-bold">🔍 PRUEBA: esJefe = {esJefe ? 'VERDADERO' : 'FALSO'}</p>
-          <p>Usuario rol: {user.rol || 'no definido'}</p>
-        </div>
-
         {esJefe && (
           <div className="mb-8">
             <Estadisticas />
