@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatMoney, formatDate } from '../utils/formatters';
 import * as XLSX from 'xlsx';
+import { Estadisticas } from '../components/Estadisticas';
+
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const esJefe = user.rol === 'jefe';
 
 export function Reportes() {
   const [fechaInicio, setFechaInicio] = useState('');
@@ -249,6 +253,12 @@ export function Reportes() {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-full mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">📄 Reportes y Exportaciones</h1>
+
+        {esJefe && (
+          <div className="mb-8">
+            <Estadisticas sucursales={sucursales} />
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Panel de filtros */}

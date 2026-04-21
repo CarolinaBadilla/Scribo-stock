@@ -4,7 +4,6 @@ import { LeyendaColores } from '../components/LeyendaColores';
 import { formatMoney } from '../utils/formatters';
 import { ModalEditarProducto } from '../components/ModalEditarProducto';
 import { ModalAgregarProducto } from '../components/ModalAgregarProducto';
-import { Estadisticas } from '../components/Estadisticas';
 
 export function Dashboard() {
   const [stock, setStock] = useState([]);
@@ -114,12 +113,6 @@ export function Dashboard() {
           <h1 className="text-2xl md:text-3xl font-bold">📊 Stock de la Librería</h1>
           <button onClick={() => setMostrarAgregar(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2 transition">➕ Nuevo producto</button>
         </div>
-
-        {esJefe && (
-          <div className="mb-8">
-            <Estadisticas />
-          </div>
-        )}
         
         {sucursales.length > 0 && (
           <div className="mb-6 p-4 bg-blue-50 rounded-xl">

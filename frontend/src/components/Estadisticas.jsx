@@ -5,28 +5,21 @@ import { formatMoney } from '../utils/formatters';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+  Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
-export function Estadisticas() {
+export function Estadisticas({ sucursales = [] }) {
   const [productosMasVendidos, setProductosMasVendidos] = useState([]);
   const [ventasPorDia, setVentasPorDia] = useState([]);
   const [stockBajo, setStockBajo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('7d');
-
-  // Obtener el rol del usuario
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const esJefe = user.rol === 'jefe';
-
-  const COLORS = ['#c9a87b', '#7d8a6e', '#b87a6a', '#d4b87a', '#9bae7a'];
+  const [sucursalFiltro, setSucursalFiltro] = useState(null);
 
   useEffect(() => {
-    if (esJefe) {
-      cargarEstadisticas();
-      verificarStockBajo();
-    }
-  }, [periodo, esJefe]);
+    cargarEstadisticas();
+    verificarStockBajo();
+  }, [periodo, sucursalFiltro]);
 
   const cargarEstadisticas = async () => {
     setLoading(true);
@@ -37,12 +30,22 @@ export function Estadisticas() {
       if (periodo === '30d') fechaInicio.setDate(fechaInicio.getDate() - 30);
       if (periodo === '90d') fechaInicio.setDate(fechaInicio.getDate() - 90);
 
-      const { data: movimientos } = await supabase
+      // Consulta con filtro de sucursal
+      let query = supabase
         .from('movimientos')
         .select('*')
         .eq('tipo_movimiento', 'venta')
         .gte('fecha', fechaInicio.toISOString());
 
+      if (sucursalFiltro) {
+        query = query.eq('sucursal_id', sucursalFiltro);
+      }
+
+      const { data: movimientos, error } = await query;
+      
+      if (error) throw error;
+
+      // Productos más vendidos
       const productosMap = new Map();
       for (const mov of (movimientos || [])) {
         let nombre = '';
@@ -61,7 +64,6 @@ export function Estadisticas() {
             .single();
           nombre = ropa?.nombre || 'Desconocido';
         }
-
         productosMap.set(nombre, (productosMap.get(nombre) || 0) + mov.cantidad);
       }
 
@@ -72,6 +74,7 @@ export function Estadisticas() {
 
       setProductosMasVendidos(productosArray);
 
+      // Ventas por día
       const ventasPorDiaMap = new Map();
       for (const mov of (movimientos || [])) {
         const fecha = new Date(mov.fecha).toLocaleDateString('es-AR');
@@ -84,7 +87,7 @@ export function Estadisticas() {
 
       setVentasPorDia(ventasArray);
     } catch (error) {
-      console.error('Error cargando estadísticas:', error);
+      console.error('Error:', error);
       toast.error('Error al cargar estadísticas');
     } finally {
       setLoading(false);
@@ -93,10 +96,18 @@ export function Estadisticas() {
 
   const verificarStockBajo = async () => {
     try {
-      const { data: stock } = await supabase
+      let query = supabase
         .from('vista_stock_completo')
         .select('*')
         .lte('cantidad', 5);
+
+      if (sucursalFiltro) {
+        query = query.eq('sucursal_id', sucursalFiltro);
+      }
+
+      const { data: stock, error } = await query;
+      
+      if (error) throw error;
 
       const productosBajo = (stock || []).filter(p => p.cantidad <= p.stock_minimo);
       setStockBajo(productosBajo);
@@ -106,19 +117,12 @@ export function Estadisticas() {
           toast.error(`⚠️ ${producto.nombre_producto} - SIN STOCK!`);
         } else if (producto.cantidad <= 2) {
           toast.warning(`⚠️ ${producto.nombre_producto} - Stock crítico: ${producto.cantidad} unidades`);
-        } else {
-          toast.info(`📦 ${producto.nombre_producto} - Stock bajo: ${producto.cantidad} unidades`);
         }
       });
     } catch (error) {
-      console.error('Error verificando stock:', error);
+      console.error('Error:', error);
     }
   };
-
-  // Si no es jefe, no mostrar nada
-  if (!esJefe) {
-    return null;
-  }
 
   if (loading) {
     return (
@@ -130,39 +134,38 @@ export function Estadisticas() {
 
   return (
     <div className="space-y-6">
-      {/* Encabezado solo para jefe */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-[#5a4a3a]">📊 Panel de Estadísticas</h2>
-        <span className="text-xs bg-[#c9a87b] text-white px-2 py-1 rounded-full">Solo Administrador</span>
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-[#5a4a3a]">📊 Panel de Estadísticas</h2>
+          <span className="text-xs bg-[#c9a87b] text-white px-2 py-1 rounded-full">Solo Administrador</span>
+        </div>
+        
+        {/* Filtro de sucursal */}
+        {sucursales.length > 0 && (
+          <select
+            value={sucursalFiltro || ''}
+            onChange={(e) => setSucursalFiltro(e.target.value ? parseInt(e.target.value) : null)}
+            className="px-3 py-1.5 border border-[#e2d8cc] rounded-lg text-sm bg-[#fefcf8]"
+          >
+            <option value="">Todas las sucursales</option>
+            {sucursales.map(s => (
+              <option key={s.id} value={s.id}>{s.nombre}</option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Selector de período */}
       <div className="flex justify-end gap-2">
-        <button
-          onClick={() => setPeriodo('7d')}
-          className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '7d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}
-        >
-          Últimos 7 días
-        </button>
-        <button
-          onClick={() => setPeriodo('30d')}
-          className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '30d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}
-        >
-          Últimos 30 días
-        </button>
-        <button
-          onClick={() => setPeriodo('90d')}
-          className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '90d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}
-        >
-          Últimos 90 días
-        </button>
+        <button onClick={() => setPeriodo('7d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '7d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>7 días</button>
+        <button onClick={() => setPeriodo('30d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '30d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>30 días</button>
+        <button onClick={() => setPeriodo('90d')} className={`px-3 py-1 rounded-lg text-sm transition ${periodo === '90d' ? 'bg-[#c9a87b] text-white' : 'bg-[#ede5d9] text-[#5a4a3a]'}`}>90 días</button>
       </div>
 
       {/* Productos más vendidos */}
       <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-6">
         <h3 className="text-lg font-bold text-[#5a4a3a] mb-4">🏆 Productos más vendidos</h3>
         {productosMasVendidos.length === 0 ? (
-          <div className="text-center py-8 text-[#8a7a6a]">No hay datos de ventas en este período</div>
+          <div className="text-center py-8 text-[#8a7a6a]">No hay datos de ventas</div>
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -183,7 +186,7 @@ export function Estadisticas() {
       <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-6">
         <h3 className="text-lg font-bold text-[#5a4a3a] mb-4">📈 Ventas por día</h3>
         {ventasPorDia.length === 0 ? (
-          <div className="text-center py-8 text-[#8a7a6a]">No hay datos de ventas en este período</div>
+          <div className="text-center py-8 text-[#8a7a6a]">No hay datos de ventas</div>
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -211,13 +214,10 @@ export function Estadisticas() {
               <div key={idx} className="flex justify-between items-center p-3 bg-[#ede5d9] rounded-lg">
                 <div>
                   <p className="font-medium text-[#5a4a3a]">{producto.nombre_producto}</p>
-                  <p className="text-sm text-[#8a7a6a]">{producto.tipo_producto === 'libro' ? 'Libro' : 'Ropa'}</p>
+                  <p className="text-sm text-[#8a7a6a]">{producto.sucursal_nombre}</p>
                 </div>
                 <div className="text-right">
-                  <p className={`font-bold ${
-                    producto.cantidad === 0 ? 'text-red-600' : 
-                    producto.cantidad <= 2 ? 'text-orange-600' : 'text-yellow-600'
-                  }`}>
+                  <p className={`font-bold ${producto.cantidad === 0 ? 'text-red-600' : producto.cantidad <= 2 ? 'text-orange-600' : 'text-yellow-600'}`}>
                     {producto.cantidad} unidades
                   </p>
                   <p className="text-xs text-[#8a7a6a]">Mínimo: {producto.stock_minimo}</p>
