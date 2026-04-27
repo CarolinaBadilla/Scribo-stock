@@ -192,7 +192,7 @@ export function Dashboard() {
                         )}
                       </div>
                       <div className="text-right">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        <span className={`px-3 py-1.5 rounded-full text-base md:text-sm font-bold ${
                           producto.cantidad >= 15 ? 'bg-blue-500 text-white' :
                           producto.cantidad >= 6 ? 'bg-green-500 text-white' :
                           producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'

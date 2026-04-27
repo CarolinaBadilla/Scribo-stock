@@ -16,9 +16,11 @@ export function Reportes() {
   const [datos, setDatos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
     cargarSucursales();
+    setRenderKey(prev => prev + 1);
   }, []);
 
   useEffect(() => {
@@ -257,7 +259,7 @@ export function Reportes() {
 
         {esJefe && (
           <div className="mb-8">
-            <Estadisticas sucursales={sucursales} />
+            <Estadisticas key={renderKey} sucursales={sucursales} />
           </div>
         )}
         
