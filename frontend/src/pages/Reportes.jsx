@@ -19,9 +19,12 @@ export function Reportes() {
   const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
-    cargarSucursales();
-    setRenderKey(prev => prev + 1);
-  }, []);
+  cargarSucursales();
+  // Forzar recarga de estadísticas después de 500ms
+  setTimeout(() => {
+    setEstadisticasKey(prev => prev + 1);
+  }, 500);
+}, []);
 
   useEffect(() => {
     if (sucursalId) {
