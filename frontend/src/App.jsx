@@ -72,10 +72,11 @@ function App() {
             <>
               <Route path="/login" element={<Login />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
+              
             </>
           ) : (
             <>
-              <Route path="/" element={<Layout />}>
+              <Route path="/" element={<Layout isMobile={isMobile} />}>
                 <Route index element={<Ventas />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="ventas" element={<Ventas />} />

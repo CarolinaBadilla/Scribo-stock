@@ -2,7 +2,7 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
-export function Layout() {
+export function Layout({ isMobile = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -21,14 +21,12 @@ export function Layout() {
     }
   };
 
-  // Función para saber si un link está activo
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;
     if (path !== '/' && location.pathname.startsWith(path)) return true;
     return false;
   };
 
-  // Clases para links según estén activos o no
   const linkClass = (path) => {
     const baseClass = "px-4 py-2 rounded-lg transition-all duration-200 font-medium text-base";
     if (isActive(path)) {
@@ -39,26 +37,27 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-[#f5f0e8] flex flex-col">
-      {/* Navbar */}
       <nav className="bg-[#fefcf8] border-b border-[#e2d8cc] sticky top-0 z-10 shadow-sm">
         <div className="w-full px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center h-16 md:h-20">
             
-            {/* Logo más grande */}
+            {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                <img 
-                  src="/imagenes/Logo Scribo.png" 
-                  alt="Scribo Logo" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span className="text-base md:text-lg font-bold text-[#5a4a3a] group-hover:text-[#c9a87b] transition">
+              <img 
+                src="/images/scribo-logo.png" 
+                alt="Scribo Logo" 
+                className="w-10 h-10 md:w-12 md:h-12 object-contain"
+                onError={(e) => { 
+                  e.target.onerror = null; 
+                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📚%3C/text%3E%3C/svg%3E';
+                }}
+              />
+              <span className="text-lg md:text-xl font-bold text-[#5a4a3a] group-hover:text-[#c9a87b] transition">
                 Scribo Stock
               </span>
             </Link>
-
-            {/* Navigation Links - Ocultar en móvil si isMobile es true */}
+            
+            {/* Navigation Links - ocultar en móvil */}
             {!isMobile && (
               <div className="hidden md:flex items-center gap-2 lg:gap-3">
                 <Link to="/" className={linkClass('/')}>🛒 Ventas</Link>
@@ -68,30 +67,14 @@ export function Layout() {
               </div>
             )}
             
-            {/* Versión móvil - solo mostrar íconos */}
+            {/* Versión móvil - solo ícono */}
             {isMobile && (
               <div className="flex items-center gap-1">
-                <Link to="/dashboard" className="px-3 py-2 rounded-lg text-[#c9a87b]">
+                <Link to="/dashboard" className="px-3 py-2 rounded-lg text-[#c9a87b] text-xl">
                   📊
                 </Link>
               </div>
             )}
-            
-            {/* Navigation Links - más grandes y separados */}
-            <div className="hidden md:flex items-center gap-2 lg:gap-3">
-              <Link to="/" className={linkClass('/')}>
-                🛒 Ventas
-              </Link>
-              <Link to="/dashboard" className={linkClass('/dashboard')}>
-                📊 Stock
-              </Link>
-              <Link to="/compras" className={linkClass('/compras')}>
-                📦 Compras
-              </Link>
-              <Link to="/reportes" className={linkClass('/reportes')}>
-                📄 Reportes
-              </Link>
-            </div>
             
             {/* User Menu */}
             <div className="flex items-center gap-3 shrink-0">
@@ -117,7 +100,6 @@ export function Layout() {
         </div>
       </nav>
       
-      {/* Main content */}
       <main className="flex-1 pt-4 md:pt-5">
         <div className="w-full px-3 sm:px-4 md:px-5 lg:px-6 fade-in">
           <Outlet />
