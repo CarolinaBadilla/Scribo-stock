@@ -10,6 +10,13 @@ import {
 import { exportarEstadisticasPDF } from '../utils/exportPDF';
 
 export function Estadisticas({ sucursales = [] }) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const esJefe = user.rol === 'jefe';
+
+  if (!esJefe) {
+    return null;
+  }
+  
   const [productosMasVendidos, setProductosMasVendidos] = useState([]);
   const [ventasPorDia, setVentasPorDia] = useState([]);
   const [stockBajo, setStockBajo] = useState([]);

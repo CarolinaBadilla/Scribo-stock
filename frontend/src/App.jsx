@@ -14,6 +14,16 @@ import { AlertasStock } from './components/AlertasStock';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const verificarSesion = async () => {
@@ -61,11 +71,11 @@ function App() {
           ) : (
             <>
               <Route path="/" element={<Layout />}>
-                <Route index element={<Ventas />} />
+                <Route index element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="ventas" element={<Ventas />} />
-                <Route path="compras" element={<Compras />} />
-                <Route path="reportes" element={<Reportes />} />
+                <Route path="ventas" element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
+                <Route path="compras" element={isMobile ? <Navigate to="/dashboard" replace /> : <Compras />} />
+                <Route path="reportes" element={isMobile ? <Navigate to="/dashboard" replace /> : <Reportes />} />
               </Route>
               <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
