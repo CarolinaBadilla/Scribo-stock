@@ -11,24 +11,9 @@ import { Reportes } from './pages/Reportes';
 import { supabase } from './services/supabase';
 import { AlertasStock } from './components/AlertasStock';
 
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-
-
-   useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      const mobileRegex = /android|iphone|ipad|ipod|blackberry|windows phone/i;
-      setIsMobile(mobileRegex.test(userAgent) || window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
 
   useEffect(() => {
     const verificarSesion = async () => {
@@ -72,11 +57,10 @@ function App() {
             <>
               <Route path="/login" element={<Login />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
-              
             </>
           ) : (
             <>
-              <Route path="/" element={<Layout isMobile={isMobile} />}>
+              <Route path="/" element={<Layout />}>
                 <Route index element={<Ventas />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="ventas" element={<Ventas />} />

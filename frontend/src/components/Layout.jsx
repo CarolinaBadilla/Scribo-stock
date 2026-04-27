@@ -1,11 +1,23 @@
 // src/components/Layout.jsx
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 
-export function Layout({ isMobile = false }) {
+export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar móvil dentro del Layout
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -42,7 +54,7 @@ export function Layout({ isMobile = false }) {
           <div className="flex justify-between items-center h-16 md:h-20">
             
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group shrink-0">
+            <Link to={isMobile ? "/dashboard" : "/"} className="flex items-center gap-3 group shrink-0">
               <img 
                 src="/images/scribo-logo.png" 
                 alt="Scribo Logo" 
