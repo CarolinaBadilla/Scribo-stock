@@ -19,7 +19,6 @@ export function Estadisticas({ sucursales = [] }) {
 
   useEffect(() => {
     cargarEstadisticas();
-    verificarStockBajo();
   }, [periodo, sucursalFiltro]);
 
   const cargarEstadisticas = async () => {
@@ -95,35 +94,6 @@ export function Estadisticas({ sucursales = [] }) {
     }
   };
 
-  const verificarStockBajo = async () => {
-    try {
-      let query = supabase
-        .from('vista_stock_completo')
-        .select('*')
-        .lte('cantidad', 5);
-
-      if (sucursalFiltro) {
-        query = query.eq('sucursal_id', sucursalFiltro);
-      }
-
-      const { data: stock, error } = await query;
-      
-      if (error) throw error;
-
-      const productosBajo = (stock || []).filter(p => p.cantidad <= p.stock_minimo);
-      setStockBajo(productosBajo);
-
-      productosBajo.forEach(producto => {
-        if (producto.cantidad === 0) {
-          toast.error(`⚠️ ${producto.nombre_producto} - SIN STOCK!`);
-        } else if (producto.cantidad <= 2) {
-          toast.warning(`⚠️ ${producto.nombre_producto} - Stock crítico: ${producto.cantidad} unidades`);
-        }
-      });
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
 
   if (loading) {
     return (

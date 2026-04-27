@@ -9,11 +9,26 @@ import { Dashboard } from './pages/Dashboard';
 import { Compras } from './pages/Compras';
 import { Reportes } from './pages/Reportes';
 import { supabase } from './services/supabase';
+import { AlertasStock } from './components/AlertasStock';
 
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+
+
+   useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const mobileRegex = /android|iphone|ipad|ipod|blackberry|windows phone/i;
+      setIsMobile(mobileRegex.test(userAgent) || window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
 
   useEffect(() => {
     const verificarSesion = async () => {
@@ -50,6 +65,7 @@ function App() {
   return (
     <>
       <Toaster position="top-right" richColors />
+      {isAuthenticated && <AlertasStock />}
       <BrowserRouter>
         <Routes>
           {!isAuthenticated ? (

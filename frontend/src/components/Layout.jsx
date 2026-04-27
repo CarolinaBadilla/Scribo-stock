@@ -57,6 +57,25 @@ export function Layout() {
                 Scribo Stock
               </span>
             </Link>
+
+            {/* Navigation Links - Ocultar en móvil si isMobile es true */}
+            {!isMobile && (
+              <div className="hidden md:flex items-center gap-2 lg:gap-3">
+                <Link to="/" className={linkClass('/')}>🛒 Ventas</Link>
+                <Link to="/dashboard" className={linkClass('/dashboard')}>📊 Stock</Link>
+                <Link to="/compras" className={linkClass('/compras')}>📦 Compras</Link>
+                <Link to="/reportes" className={linkClass('/reportes')}>📄 Reportes</Link>
+              </div>
+            )}
+            
+            {/* Versión móvil - solo mostrar íconos */}
+            {isMobile && (
+              <div className="flex items-center gap-1">
+                <Link to="/dashboard" className="px-3 py-2 rounded-lg text-[#c9a87b]">
+                  📊
+                </Link>
+              </div>
+            )}
             
             {/* Navigation Links - más grandes y separados */}
             <div className="hidden md:flex items-center gap-2 lg:gap-3">
