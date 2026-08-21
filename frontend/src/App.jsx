@@ -8,8 +8,8 @@ import { Ventas } from './pages/Ventas';
 import { Dashboard } from './pages/Dashboard';
 import { Compras } from './pages/Compras';
 import { Reportes } from './pages/Reportes';
-import { supabase } from './services/supabase';
 import { AlertasStock } from './components/AlertasStock';
+import api from './services/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,41 +26,65 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const verificarSesion = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsAuthenticated(!!session);
-      } catch (error) {
-        console.error('Error:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     verificarSesion();
-    
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-    
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
   }, []);
+
+  const verificarSesion = async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Validar la vigencia del token contra el backend de Node
+      await api.get('/autenticacion/perfil');
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.warn('Sesión no válida o token expirado:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8]">
-        <div className="text-[#5a4a3a]">Cargando...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f0e8] text-[#5a4a3a]">
+        <div className="w-16 h-16 mb-4 rounded-2xl bg-[#fefcf8] border border-[#e2d8cc] p-3 shadow-sm flex items-center justify-center animate-pulse">
+          <img 
+            src="/imagenes/Logo Scribo.png" 
+            alt="Scribo" 
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📚%3C/text%3E%3C/svg%3E';
+            }}
+          />
+        </div>
+        <p className="text-sm font-semibold tracking-wide text-[#8a7a6a] animate-pulse">
+          Cargando Scribo Stock...
+        </p>
       </div>
     );
   }
 
   return (
     <>
-      <Toaster position="top-right" richColors />
+      <Toaster 
+        position="top-right" 
+        richColors 
+        toastOptions={{
+          style: { borderRadius: '12px', border: '1px solid #e2d8cc', background: '#fefcf8' }
+        }}
+      />
+      
       {isAuthenticated && <AlertasStock />}
+
       <BrowserRouter>
         <Routes>
           {!isAuthenticated ? (

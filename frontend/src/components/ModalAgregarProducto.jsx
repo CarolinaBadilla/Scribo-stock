@@ -1,5 +1,6 @@
+// src/components/ModalAgregarProducto.jsx
 import { useState } from 'react';
-import { supabase } from '../services/supabase';
+import api from '../services/api';
 
 export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
   const [tipo, setTipo] = useState('libro');
@@ -13,9 +14,9 @@ export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
     colegio: '',
     talle: '',
     color: '',
-    precio_compra: 0,
-    precio_efectivo: 0,
-    precio_tarjeta: 0
+    precio_compra: '',
+    precio_efectivo: '',
+    precio_tarjeta: ''
   });
 
   const handleChange = (e) => {
@@ -31,166 +32,277 @@ export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
     setLoading(true);
     setError('');
 
-    if (!formData.codigo_barras) {
+    if (!formData.codigo_barras.trim()) {
       setError('El código de barras es obligatorio');
       setLoading(false);
       return;
     }
     
-    if (!formData.nombre) {
-      setError('El nombre es obligatorio');
+    if (!formData.nombre.trim()) {
+      setError('El nombre del producto es obligatorio');
       setLoading(false);
       return;
     }
     
-    if (formData.precio_efectivo <= 0) {
+    const precioEfectivo = parseFloat(formData.precio_efectivo);
+    if (isNaN(precioEfectivo) || precioEfectivo <= 0) {
       setError('El precio efectivo debe ser mayor a 0');
       setLoading(false);
       return;
     }
 
+    if (tipo === 'ropa' && !formData.colegio.trim()) {
+      setError('El colegio es obligatorio para productos de indumentaria');
+      setLoading(false);
+      return;
+    }
+
     try {
-      let result;
-      let productoId;
-      let tipoProducto;
-      
-      if (tipo === 'libro') {
-        const { data, error } = await supabase
-          .from('libros')
-          .insert({
-            codigo_barras: formData.codigo_barras,
-            titulo: formData.nombre,
-            autor: formData.autor || null,
-            editorial: formData.editorial || null,
-            precio_compra: parseFloat(formData.precio_compra) || 0,
-            precio_efectivo: parseFloat(formData.precio_efectivo),
-            precio_tarjeta: parseFloat(formData.precio_tarjeta) || parseFloat(formData.precio_efectivo)
-          })
-          .select();
-        
-        if (error) throw error;
-        productoId = data[0].id;
-        tipoProducto = 'libro';
-      } else {
-        const ganancia = parseFloat(formData.precio_efectivo) - (parseFloat(formData.precio_compra) || 0);
-        
-        const { data, error } = await supabase
-          .from('ropa')
-          .insert({
-            codigo_barras: formData.codigo_barras,
-            nombre: formData.nombre,
-            colegio: formData.colegio,
-            talle: formData.talle || null,
-            color: formData.color || null,
-            precio_compra: parseFloat(formData.precio_compra) || 0,
-            precio_efectivo: parseFloat(formData.precio_efectivo),
-            precio_tarjeta: parseFloat(formData.precio_tarjeta) || parseFloat(formData.precio_efectivo),
-            ganancia: ganancia
-          })
-          .select();
-        
-        if (error) throw error;
-        productoId = data[0].id;
-        tipoProducto = 'ropa';
-      }
+      const payload = {
+        tipo_producto: tipo,
+        sucursal_id: sucursalId,
+        codigo_barras: formData.codigo_barras.trim(),
+        nombre: formData.nombre.trim(),
+        precio_compra: parseFloat(formData.precio_compra) || 0,
+        precio_efectivo: precioEfectivo,
+        precio_tarjeta: parseFloat(formData.precio_tarjeta) || precioEfectivo,
+        // Atributos específicos según categoría
+        autor: tipo === 'libro' ? formData.autor.trim() || null : undefined,
+        editorial: tipo === 'libro' ? formData.editorial.trim() || null : undefined,
+        colegio: tipo === 'ropa' ? formData.colegio.trim() : undefined,
+        talle: tipo === 'ropa' ? formData.talle.trim() || null : undefined,
+        color: tipo === 'ropa' ? formData.color.trim() || null : undefined,
+      };
 
-      // Obtener sucursales
-       const { error: stockError } = await supabase
-        .from('stock')
-        .insert({
-          tipo_producto: tipoProducto,
-          producto_id: productoId,
-          sucursal_id: sucursalId,  // Usar la sucursal seleccionada
-          cantidad: 0,
-          stock_minimo: 5
-        });
-      
-      if (stockError) throw stockError;
+      await api.post('/productos', payload);
 
-      alert('✅ Producto agregado correctamente');
+      alert('✅ Producto registrado exitosamente');
       onAgregar();
       onClose();
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message || 'Error al agregar producto');
+    } catch (err) {
+      console.error('Error creando producto:', err);
+      const mensajeError = err.response?.data?.error || err.message || 'Error al guardar el producto';
+      setError(mensajeError);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-[#5a4a3a] bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-full overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">➕ Agregar Producto</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    <div className="fixed inset-0 bg-[#5a4a3a]/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-all">
+      <div className="bg-[#fefcf8] rounded-2xl shadow-2xl border border-[#e2d8cc] w-full max-w-lg max-h-[90vh] overflow-y-auto text-[#5a4a3a]">
+        
+        {/* Cabecera del Modal */}
+        <div className="flex justify-between items-center px-6 py-5 border-b border-[#e2d8cc] bg-[#f5f0e8]/50">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">➕ Registrar Nuevo Producto</h2>
+            <p className="text-xs text-[#8a7a6a] mt-0.5">Completa los detalles para agregarlo al inventario</p>
           </div>
-          
+          <button 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-xl bg-white border border-[#e2d8cc] text-[#8a7a6a] hover:text-[#5a4a3a] hover:bg-[#f5f0e8] flex items-center justify-center text-lg font-bold transition-all"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-              {error}
+            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Selector de Tipo de Producto */}
             <div>
-              <label className="block text-sm font-bold mb-1">Tipo</label>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="w-full p-2 border rounded-lg">
-                <option value="libro">📚 Libro</option>
-                <option value="ropa">👕 Ropa</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-bold mb-1">Código de barras *</label>
-              <input type="text" name="codigo_barras" value={formData.codigo_barras} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-bold mb-1">Nombre *</label>
-              <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
-            </div>
-            
-            {tipo === 'libro' ? (
-              <>
-                <div><label className="block text-sm font-bold mb-1">Autor</label><input type="text" name="autor" value={formData.autor} onChange={handleChange} className="w-full p-2 border rounded-lg" /></div>
-                <div><label className="block text-sm font-bold mb-1">Editorial</label><input type="text" name="editorial" value={formData.editorial} onChange={handleChange} className="w-full p-2 border rounded-lg" /></div>
-              </>
-            ) : (
-              <>
-                <div><label className="block text-sm font-bold mb-1">Colegio *</label><input type="text" name="colegio" value={formData.colegio} onChange={handleChange} className="w-full p-2 border rounded-lg" required /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-bold mb-1">Talle</label><input type="text" name="talle" value={formData.talle} onChange={handleChange} className="w-full p-2 border rounded-lg" /></div>
-                  <div><label className="block text-sm font-bold mb-1">Color</label><input type="text" name="color" value={formData.color} onChange={handleChange} className="w-full p-2 border rounded-lg" /></div>
-                </div>
-              </>
-            )}
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-sm font-bold mb-1">Precio compra</label><input type="number" name="precio_compra" value={formData.precio_compra} onChange={handleChange} className="w-full p-2 border rounded-lg" step="0.01" /></div>
-              <div><label className="block text-sm font-bold mb-1">Precio Efectivo *</label><input type="number" name="precio_efectivo" value={formData.precio_efectivo} onChange={handleChange} className="w-full p-2 border rounded-lg" required step="0.01" /></div>
-            </div>
-            
-            <div><label className="block text-sm font-bold mb-1">Precio Tarjeta</label><input type="number" name="precio_tarjeta" value={formData.precio_tarjeta} onChange={handleChange} className="w-full p-2 border rounded-lg" step="0.01" /></div>
-            
-            <div className="mt-6 pt-4 border-t border-[#e2d8cc]">
-              <div className="flex gap-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#8a7a6a] mb-1.5">
+                Tipo de Producto
+              </label>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-[#e2d8cc] rounded-lg hover:bg-[#ede5d9] transition text-[#5a4a3a] text-sm font-medium"
+                  onClick={() => setTipo('libro')}
+                  className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition border ${
+                    tipo === 'libro'
+                      ? 'bg-[#5a4a3a] text-white border-[#5a4a3a] shadow-sm'
+                      : 'bg-white text-[#5a4a3a] border-[#e2d8cc] hover:bg-[#f5f0e8]'
+                  }`}
                 >
-                  Cancelar
+                  <span>📚</span> Libro
                 </button>
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-[#c9a87b] text-white py-2 rounded-lg hover:bg-[#a8865d] transition disabled:opacity-50 text-sm font-medium"
+                  type="button"
+                  onClick={() => setTipo('ropa')}
+                  className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition border ${
+                    tipo === 'ropa'
+                      ? 'bg-[#5a4a3a] text-white border-[#5a4a3a] shadow-sm'
+                      : 'bg-white text-[#5a4a3a] border-[#e2d8cc] hover:bg-[#f5f0e8]'
+                  }`}
                 >
-                  {loading ? 'Agregando...' : '✅ Agregar producto'}
+                  <span>👕</span> Indumentaria / Ropa
                 </button>
               </div>
+            </div>
+
+            {/* Datos Generales */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Código de barras *</label>
+                <input 
+                  type="text" 
+                  name="codigo_barras" 
+                  value={formData.codigo_barras} 
+                  onChange={handleChange} 
+                  className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                  placeholder="Ej: 9789500712345"
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Nombre / Título *</label>
+                <input 
+                  type="text" 
+                  name="nombre" 
+                  value={formData.nombre} 
+                  onChange={handleChange} 
+                  className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                  placeholder="Ej: Manuel Belgrano"
+                  required 
+                />
+              </div>
+            </div>
+
+            {/* Formulario Dinámico según Tipo */}
+            {tipo === 'libro' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#f5f0e8]/40 p-3.5 rounded-xl border border-[#e2d8cc]/60">
+                <div>
+                  <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Autor</label>
+                  <input 
+                    type="text" 
+                    name="autor" 
+                    value={formData.autor} 
+                    onChange={handleChange} 
+                    className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                    placeholder="Ej: Felipe Pigna"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Editorial</label>
+                  <input 
+                    type="text" 
+                    name="editorial" 
+                    value={formData.editorial} 
+                    onChange={handleChange} 
+                    className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                    placeholder="Ej: Planeta"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 bg-[#f5f0e8]/40 p-3.5 rounded-xl border border-[#e2d8cc]/60">
+                <div>
+                  <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Colegio / Institución *</label>
+                  <input 
+                    type="text" 
+                    name="colegio" 
+                    value={formData.colegio} 
+                    onChange={handleChange} 
+                    className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                    placeholder="Ej: San Martín"
+                    required 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Talle</label>
+                    <input 
+                      type="text" 
+                      name="talle" 
+                      value={formData.talle} 
+                      onChange={handleChange} 
+                      className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                      placeholder="Ej: 12 / M"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Color</label>
+                    <input 
+                      type="text" 
+                      name="color" 
+                      value={formData.color} 
+                      onChange={handleChange} 
+                      className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                      placeholder="Ej: Azul Marino"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Precios */}
+            <div className="space-y-3 pt-1">
+              <span className="block text-xs font-bold uppercase tracking-wider text-[#8a7a6a]">Estructura de Precios</span>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#5a4a3a] mb-1">Costo ($)</label>
+                  <input 
+                    type="number" 
+                    name="precio_compra" 
+                    value={formData.precio_compra} 
+                    onChange={handleChange} 
+                    className="w-full px-3 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                    placeholder="0.00" 
+                    step="0.01" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#5a4a3a] mb-1">Efectivo ($) *</label>
+                  <input 
+                    type="number" 
+                    name="precio_efectivo" 
+                    value={formData.precio_efectivo} 
+                    onChange={handleChange} 
+                    className="w-full px-3 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b] font-bold text-[#5a4a3a]" 
+                    placeholder="0.00" 
+                    required 
+                    step="0.01" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#5a4a3a] mb-1">Tarjeta ($)</label>
+                  <input 
+                    type="number" 
+                    name="precio_tarjeta" 
+                    value={formData.precio_tarjeta} 
+                    onChange={handleChange} 
+                    className="w-full px-3 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c9a87b]" 
+                    placeholder="0.00" 
+                    step="0.01" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="mt-6 pt-4 border-t border-[#e2d8cc] flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 border border-[#e2d8cc] rounded-xl hover:bg-[#f5f0e8] transition text-[#5a4a3a] text-xs font-bold"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-[#c9a87b] hover:bg-[#b8976a] active:bg-[#a8865d] text-white py-2.5 rounded-xl font-bold transition shadow-sm disabled:opacity-50 text-xs"
+              >
+                {loading ? 'Guardando...' : '✅ Guardar producto'}
+              </button>
             </div>
           </form>
         </div>

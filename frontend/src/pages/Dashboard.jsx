@@ -1,5 +1,6 @@
+// src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
+import api from '../services/api';
 import { LeyendaColores } from '../components/LeyendaColores';
 import { formatMoney } from '../utils/formatters';
 import { ModalEditarProducto } from '../components/ModalEditarProducto';
@@ -16,9 +17,8 @@ export function Dashboard() {
   const [tipoEditando, setTipoEditando] = useState(null);
   const [mostrarAgregar, setMostrarAgregar] = useState(false);
   
-  // Obtener el usuario y su rol
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const esJefe = user.rol === 'jefe';
+  const esJefe = user.rol === 'jefe' || user.rol === 'DUENO';
 
   useEffect(() => {
     cargarSucursales();
@@ -32,15 +32,10 @@ export function Dashboard() {
 
   const cargarSucursales = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sucursales')
-        .select('*')
-        .order('id');
-      
-      if (error) throw error;
-      
-      setSucursales(data || []);
-      if (data && data.length > 0) {
+      const response = await api.get('/sucursales');
+      const data = response.data || [];
+      setSucursales(data);
+      if (data.length > 0) {
         setSucursalSeleccionada(data[0].id);
       } else {
         setLoading(false);
@@ -56,24 +51,23 @@ export function Dashboard() {
     
     setLoading(true);
     try {
-      let query = supabase
-        .from('vista_stock_completo')
-        .select('*')
-        .eq('sucursal_id', sucursalSeleccionada);
-      
+      const response = await api.get(`/stock/por-sucursal/${sucursalSeleccionada}`);
+      let data = response.data || [];
+
+      // Filtrado local según los criterios
       if (filtroTipo !== 'todos') {
-        query = query.eq('tipo_producto', filtroTipo);
+        data = data.filter(item => item.tipo_producto === filtroTipo);
       }
-      
-      if (busqueda) {
-        query = query.ilike('nombre_producto', `%${busqueda}%`);
+
+      if (busqueda.trim() !== '') {
+        const query = busqueda.toLowerCase();
+        data = data.filter(item => 
+          (item.nombre_producto && item.nombre_producto.toLowerCase().includes(query)) ||
+          (item.detalle && item.detalle.toLowerCase().includes(query))
+        );
       }
-      
-      const { data, error } = await query.order('nombre_producto');
-      
-      if (error) throw error;
-      
-      setStock(data || []);
+
+      setStock(data);
     } catch (error) {
       console.error('Error cargando stock:', error);
     } finally {
@@ -91,139 +85,162 @@ export function Dashboard() {
     if (!confirmar) return;
     
     try {
-      await supabase.from('stock').delete().eq('tipo_producto', producto.tipo_producto).eq('producto_id', producto.producto_id);
-      await supabase.from('movimientos').delete().eq('tipo_producto', producto.tipo_producto).eq('producto_id', producto.producto_id);
-      if (producto.tipo_producto === 'libro') {
-        await supabase.from('libros').delete().eq('id', producto.producto_id);
-      } else {
-        await supabase.from('ropa').delete().eq('id', producto.producto_id);
-      }
+      await api.delete(`/productos/${producto.tipo_producto}/${producto.producto_id}`);
       alert('✅ Producto eliminado correctamente');
       cargarStock();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al eliminar:', error);
       alert('Error al eliminar producto');
     }
   };
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6">
-      <div className="max-w-full mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-xl md:text-3xl font-bold">📊 Stock de la Librería</h1>
-          <button onClick={() => setMostrarAgregar(true)} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2 transition text-sm md:text-base">
-            ➕ Nuevo producto
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 bg-[#f5f0e8] min-h-screen text-[#5a4a3a]">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Encabezado Principal */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#fefcf8] p-6 rounded-2xl shadow-sm border border-[#e2d8cc]">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">📊 Control de Stock</h1>
+            <p className="text-xs md:text-sm text-[#8a7a6a] mt-1 font-medium">Gestión e inventario en tiempo real</p>
+          </div>
+          <button 
+            onClick={() => setMostrarAgregar(true)} 
+            className="bg-[#c9a87b] hover:bg-[#b8976a] active:bg-[#a8865d] text-white px-5 py-2.5 rounded-xl font-semibold shadow-sm flex items-center gap-2 transition-all text-sm md:text-base"
+          >
+            <span>➕</span>
+            <span>Nuevo producto</span>
           </button>
         </div>
-        
-        {sucursales.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-xl">
-            <label className="font-bold mr-3">📍 Sucursal:</label>
-            <select 
-              value={sucursalSeleccionada || ''} 
-              onChange={(e) => setSucursalSeleccionada(parseInt(e.target.value))} 
-              className="p-2 border rounded-lg text-sm md:text-base"
-            >
-              {sucursales.map(suc => (
-                <option key={suc.id} value={suc.id}>{suc.nombre}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        
-        <LeyendaColores />
-        
-        <div className="mb-6 space-y-3">
-          <input 
-            type="text" 
-            placeholder="🔍 Buscar por nombre de prenda o de libro" 
-            value={busqueda} 
-            onChange={(e) => setBusqueda(e.target.value)} 
-            className="w-full p-3 border rounded-lg text-base" 
-          />
-          <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => setFiltroTipo('todos')} 
-              className={`px-4 py-2 rounded transition text-sm ${filtroTipo === 'todos' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              Todos
-            </button>
-            <button 
-              onClick={() => setFiltroTipo('libro')} 
-              className={`px-4 py-2 rounded transition text-sm ${filtroTipo === 'libro' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              📚 Libros
-            </button>
-            <button 
-              onClick={() => setFiltroTipo('ropa')} 
-              className={`px-4 py-2 rounded transition text-sm ${filtroTipo === 'ropa' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            >
-              👕 Ropa
-            </button>
+
+        {/* Selector de Sucursal y Leyenda */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {sucursales.length > 0 && (
+            <div className="bg-[#fefcf8] p-5 rounded-2xl border border-[#e2d8cc] shadow-sm flex flex-col justify-center">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#8a7a6a] mb-2 block">
+                📍 Sucursal seleccionada
+              </label>
+              <select 
+                value={sucursalSeleccionada || ''} 
+                onChange={(e) => setSucursalSeleccionada(parseInt(e.target.value))} 
+                className="w-full p-2.5 bg-white border border-[#e2d8cc] rounded-xl text-sm md:text-base font-semibold text-[#5a4a3a] focus:outline-none focus:ring-2 focus:ring-[#c9a87b]"
+              >
+                {sucursales.map(suc => (
+                  <option key={suc.id} value={suc.id}>{suc.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="md:col-span-2 bg-[#fefcf8] p-5 rounded-2xl border border-[#e2d8cc] shadow-sm">
+            <LeyendaColores />
           </div>
         </div>
-        
+
+        {/* Filtros de búsqueda */}
+        <div className="bg-[#fefcf8] p-5 rounded-2xl border border-[#e2d8cc] shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input 
+              type="text" 
+              placeholder="🔍 Buscar por nombre, autor o detalle..." 
+              value={busqueda} 
+              onChange={(e) => setBusqueda(e.target.value)} 
+              className="flex-1 px-4 py-2.5 border border-[#e2d8cc] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c9a87b] text-[#5a4a3a] placeholder-[#8a7a6a]/60" 
+            />
+            
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setFiltroTipo('todos')} 
+                className={`px-4 py-2.5 rounded-xl font-medium transition text-xs md:text-sm ${
+                  filtroTipo === 'todos' 
+                    ? 'bg-[#5a4a3a] text-white shadow-sm' 
+                    : 'bg-white border border-[#e2d8cc] text-[#5a4a3a] hover:bg-[#f5f0e8]'
+                }`}
+              >
+                Todos
+              </button>
+              <button 
+                onClick={() => setFiltroTipo('libro')} 
+                className={`px-4 py-2.5 rounded-xl font-medium transition text-xs md:text-sm ${
+                  filtroTipo === 'libro' 
+                    ? 'bg-[#5a4a3a] text-white shadow-sm' 
+                    : 'bg-white border border-[#e2d8cc] text-[#5a4a3a] hover:bg-[#f5f0e8]'
+                }`}
+              >
+                📚 Libros
+              </button>
+              <button 
+                onClick={() => setFiltroTipo('ropa')} 
+                className={`px-4 py-2.5 rounded-xl font-medium transition text-xs md:text-sm ${
+                  filtroTipo === 'ropa' 
+                    ? 'bg-[#5a4a3a] text-white shadow-sm' 
+                    : 'bg-white border border-[#e2d8cc] text-[#5a4a3a] hover:bg-[#f5f0e8]'
+                }`}
+              >
+                👕 Ropa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista/Tabla de Stock */}
         {loading ? (
-          <div className="text-center py-10 text-gray-500">Cargando stock...</div>
+          <div className="text-center py-12 bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] text-[#8a7a6a] font-medium">
+            Cargando inventario de la sucursal...
+          </div>
         ) : (
           <>
-            {/* Vista MÓVIL - Cards */}
+            {/* VISTA MÓVIL (Tarjetas) */}
             <div className="block md:hidden space-y-3">
               {stock.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">No se encontraron productos.</div>
+                <div className="text-center py-10 bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] text-[#8a7a6a]">
+                  No se encontraron productos registrados.
+                </div>
               ) : (
                 stock.map((producto, index) => (
-                  <div key={index} className="bg-white rounded-xl border border-[#e2d8cc] p-3 shadow-sm">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-500 mb-1">
+                  <div key={index} className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-4 shadow-sm space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#8a7a6a] bg-[#f5f0e8] px-2 py-0.5 rounded-md border border-[#e2d8cc]">
                           {producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}
-                        </div>
-                        <p className="font-bold text-sm">{producto.nombre_producto || '-'}</p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {producto.tipo_producto === 'libro' 
-                            ? `✍️ ${producto.detalle || 'Sin autor'}`
-                            : `🏫 ${producto.detalle || 'Sin colegio'}`}
-                        </p>
-                        {producto.tipo_producto === 'ropa' && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {producto.talle || '-'} | {producto.color || '-'}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-3 py-1.5 rounded-full text-base md:text-sm font-bold ${
-                          producto.cantidad >= 15 ? 'bg-blue-500 text-white' :
-                          producto.cantidad >= 6 ? 'bg-green-500 text-white' :
-                          producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'
-                        }`}>
-                          {producto.cantidad || 0}
                         </span>
+                        <p className="font-bold text-base text-[#5a4a3a] mt-1.5">{producto.nombre_producto || '-'}</p>
+                        <p className="text-xs text-[#8a7a6a] mt-0.5">
+                          {producto.detalle || '-'}
+                        </p>
                       </div>
+                      
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                        producto.cantidad >= 15 ? 'bg-blue-600 text-white' :
+                        producto.cantidad >= 6 ? 'bg-emerald-600 text-white' :
+                        producto.cantidad >= 1 ? 'bg-amber-500 text-white' : 'bg-rose-600 text-white'
+                      }`}>
+                        {producto.cantidad || 0} und
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                      <div className="space-y-0.5">
-                        <p className="text-xs text-gray-500">Efectivo</p>
-                        <p className="text-sm font-bold text-[#5a4a3a]">{formatMoney(producto.precio_efectivo || 0)}</p>
+
+                    <div className="flex justify-between items-center pt-3 border-t border-[#e2d8cc]/60">
+                      <div>
+                        <p className="text-[10px] uppercase text-[#8a7a6a] font-semibold">Efectivo / Tarjeta</p>
+                        <p className="text-xs font-bold text-[#5a4a3a]">
+                          {formatMoney(producto.precio_efectivo || 0)} / {formatMoney(producto.precio_tarjeta || 0)}
+                        </p>
                       </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs text-gray-500">Tarjeta</p>
-                        <p className="text-sm font-bold text-[#5a4a3a]">{formatMoney(producto.precio_tarjeta || 0)}</p>
-                      </div>
-                      <div className="flex gap-1">
+
+                      <div className="flex gap-2">
                         <button 
                           onClick={() => {
                             setProductoEditando(producto);
                             setTipoEditando(producto.tipo_producto);
                           }} 
-                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                          className="bg-blue-50 text-blue-700 hover:bg-blue-100 p-2 rounded-lg border border-blue-200 text-xs font-semibold"
                         >
-                          ✏️
+                          ✏️ Editar
                         </button>
                         {esJefe && (
                           <button 
                             onClick={() => eliminarProducto(producto)} 
-                            className="bg-red-500 text-white px-2 py-1 rounded text-xs"
+                            className="bg-rose-50 text-rose-700 hover:bg-rose-100 p-2 rounded-lg border border-rose-200 text-xs font-semibold"
                           >
                             🗑️
                           </button>
@@ -235,65 +252,65 @@ export function Dashboard() {
               )}
             </div>
 
-            {/* Vista DESKTOP - Tabla */}
-            <div className="hidden md:block overflow-x-auto bg-white rounded-xl shadow-sm">
-              <table className="w-full border-collapse">
+            {/* VISTA DESKTOP (Tabla) */}
+            <div className="hidden md:block bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] shadow-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="text-left p-5 font-bold">Tipo</th>
-                    <th className="text-left p-5 font-bold">Producto</th>
-                    <th className="text-left p-5 font-bold">Detalle</th>
-                    <th className="text-center p-5 font-bold">Stock</th>
-                    <th className="text-right p-5 font-bold">Precio Efectivo</th>
-                    <th className="text-right p-5 font-bold">Precio Tarjeta</th>
-                    <th className="text-center p-5 font-bold">Acciones</th>
+                  <tr className="bg-[#f5f0e8]/60 border-b border-[#e2d8cc] text-xs font-bold text-[#8a7a6a] uppercase tracking-wider">
+                    <th className="p-4">Tipo</th>
+                    <th className="p-4">Producto</th>
+                    <th className="p-4">Detalle</th>
+                    <th className="p-4 text-center">Stock</th>
+                    <th className="p-4 text-right">Precio Efectivo</th>
+                    <th className="p-4 text-right">Precio Tarjeta</th>
+                    <th className="p-4 text-center">Acciones</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-[#e2d8cc]/50 text-sm">
                   {stock.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="text-center py-10 text-gray-500">
-                        No se encontraron productos.
+                      <td colSpan="7" className="text-center py-10 text-[#8a7a6a]">
+                        No se encontraron productos en esta sucursal.
                       </td>
                     </tr>
                   ) : (
                     stock.map((producto, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="p-5">{producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}</td>
-                        <td className="p-5 font-medium">{producto.nombre_producto || '-'}</td>
-                        <td className="p-5 text-gray-600">
-                          {producto.tipo_producto === 'libro' 
-                            ? `✍️ ${producto.detalle || 'Sin autor'}` 
-                            : `🏫 ${producto.detalle || 'Sin colegio'} | ${producto.talle || '-'} | ${producto.color || '-'}`}
+                      <tr key={index} className="hover:bg-[#f5f0e8]/30 transition-colors">
+                        <td className="p-4 font-medium">
+                          {producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}
                         </td>
-                        <td className="p-5 text-center">
-                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                            producto.cantidad >= 15 ? 'bg-blue-500 text-white' :
-                            producto.cantidad >= 6 ? 'bg-green-500 text-white' :
-                            producto.cantidad >= 1 ? 'bg-yellow-500 text-black' : 'bg-red-500 text-white'
+                        <td className="p-4 font-semibold text-[#5a4a3a]">{producto.nombre_producto || '-'}</td>
+                        <td className="p-4 text-[#8a7a6a] text-xs">
+                          {producto.detalle || '-'}
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block shadow-sm ${
+                            producto.cantidad >= 15 ? 'bg-blue-600 text-white' :
+                            producto.cantidad >= 6 ? 'bg-emerald-600 text-white' :
+                            producto.cantidad >= 1 ? 'bg-amber-500 text-white' : 'bg-rose-600 text-white'
                           }`}>
                             {producto.cantidad || 0} und
                           </span>
                         </td>
-                        <td className="p-5 text-right font-medium">{formatMoney(producto.precio_efectivo || 0)}</td>
-                        <td className="p-5 text-right font-medium">{formatMoney(producto.precio_tarjeta || 0)}</td>
-                        <td className="p-5 text-center">
+                        <td className="p-4 text-right font-semibold">{formatMoney(producto.precio_efectivo || 0)}</td>
+                        <td className="p-4 text-right font-semibold">{formatMoney(producto.precio_tarjeta || 0)}</td>
+                        <td className="p-4 text-center">
                           <div className="flex gap-2 justify-center">
                             <button 
                               onClick={() => {
                                 setProductoEditando(producto);
                                 setTipoEditando(producto.tipo_producto);
                               }} 
-                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                              className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 text-xs font-semibold transition"
                             >
                               ✏️ Editar
                             </button>
                             {esJefe && (
                               <button 
                                 onClick={() => eliminarProducto(producto)} 
-                                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                                className="bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-lg border border-rose-200 text-xs font-semibold transition"
                               >
-                                🗑️ Eliminar
+                                🗑️
                               </button>
                             )}
                           </div>
@@ -307,7 +324,8 @@ export function Dashboard() {
           </>
         )}
       </div>
-      
+
+      {/* Modales */}
       {productoEditando && (
         <ModalEditarProducto
           producto={productoEditando}
@@ -319,7 +337,7 @@ export function Dashboard() {
           onActualizar={cargarStock}
         />
       )}
-      
+
       {mostrarAgregar && (
         <ModalAgregarProducto
           sucursalId={sucursalSeleccionada}
