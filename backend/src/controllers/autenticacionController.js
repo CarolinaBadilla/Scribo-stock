@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_scribo_2026';
 
@@ -14,12 +14,13 @@ const iniciarSesion = async (req, res) => {
       return res.status(400).json({ error: 'Debes proporcionar usuario/email y contraseña' });
     }
 
-    // 1. Buscar el perfil en PostgreSQL
+    // 1. Buscar directamente en la tabla usuarios (permite login por email o nombre de usuario)
     const result = await db.query(
-      `SELECT p.id, p.email, p.password_hash, p.rol, p.sucursal_id, s.nombre as sucursal_nombre 
-       FROM perfiles p 
-       LEFT JOIN sucursales s ON p.sucursal_id = s.id 
-       WHERE p.email = $1 LIMIT 1`,
+      `SELECT u.id, u.usuario, u.email, u.clave, u.rol, u.sucursal_id, s.nombre as sucursal_nombre 
+       FROM usuarios u 
+       LEFT JOIN sucursales s ON u.sucursal_id = s.id 
+       WHERE u.email = $1 OR u.usuario = $1 
+       LIMIT 1`,
       [identificador]
     );
 
@@ -27,22 +28,22 @@ const iniciarSesion = async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas (usuario no encontrado)' });
     }
 
-    const perfil = result.rows[0];
+    const usuarioDb = result.rows[0];
 
-    // 2. Comparar la contraseña ingresada con el hash de la base de datos usando bcrypt
-    const passwordValida = await bcrypt.compare(clave, perfil.password_hash);
+    // 2. Comparar la contraseña ingresada con el hash guardado en 'clave'
+    const passwordValida = await bcrypt.compare(clave, usuarioDb.clave);
     if (!passwordValida) {
       return res.status(401).json({ error: 'Credenciales inválidas (contraseña incorrecta)' });
     }
 
-    // 3. Estructura de respuesta para el frontend
+    // 3. Estructura de respuesta limpia para el frontend
     const usuarioRespuesta = {
-      id: perfil.id,
-      email: perfil.email,
-      usuario: perfil.email,
-      rol: perfil.rol,
-      sucursalId: perfil.sucursal_id || 1,
-      sucursalNombre: perfil.sucursal_nombre || 'Casa Central'
+      id: usuarioDb.id,
+      email: usuarioDb.email,
+      usuario: usuarioDb.usuario,
+      rol: usuarioDb.rol,
+      sucursalId: usuarioDb.sucursal_id || 1,
+      sucursalNombre: usuarioDb.sucursal_nombre || 'Casa Central'
     };
 
     // 4. Firmar el Token JWT
