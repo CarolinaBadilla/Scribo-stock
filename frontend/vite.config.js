@@ -24,6 +24,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false
+    sourcemap: false,
+    bundle: 'rollup'
   }
 })
