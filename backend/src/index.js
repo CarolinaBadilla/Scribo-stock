@@ -15,34 +15,48 @@ const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 initSocket(server);
 
-// 3. Middlewares de Seguridad y Red
-app.use(helmet());
+// Confiar en Nginx Proxy Manager para obtener la IP real del cliente
+app.set('trust proxy', 1);
 
+// 3. Middlewares de Seguridad y Red
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  })
+);
+
+// Orígenes exactos permitidos (Producción y Entorno Local)
 const allowedOrigins = [
+  'https://scribo.com.ar',
+  'https://www.scribo.com.ar',
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://scribo.com.ar',
-  'https://www.scribo.com.ar'
+  'http://localhost:8082'
 ];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origen (ej: curl, Postman o llamadas internas) o listadas
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('Origen bloqueado por CORS:', origin);
+      console.log('⚠️ Origen no listado pero permitido por fallback:', origin);
       callback(null, true);
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200
+};
+
+// Habilitar CORS globalmente y responder a peticiones de preflight (OPTIONS)
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   message: { error: 'Demasiadas peticiones desde esta IP, intente más tarde.' }
 });
 
