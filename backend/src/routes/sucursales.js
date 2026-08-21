@@ -1,23 +1,10 @@
-// src/routes/sucursales.js
 const express = require('express');
-const { supabase } = require('../config/supabase');
-
 const router = express.Router();
+const sucursalesController = require('../controllers/sucursalesController');
 
-router.get('/', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('sucursales')
-      .select('*')
-      .order('id');
-    
-    if (error) throw error;
-    
-    res.json(data);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+router.get('/', sucursalesController.obtenerSucursales);
+router.get('/:id', sucursalesController.obtenerSucursalPorId);
+router.post('/', sucursalesController.crearSucursal);
+router.put('/:id', sucursalesController.actualizarSucursal);
 
 module.exports = router;

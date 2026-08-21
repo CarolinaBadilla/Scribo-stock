@@ -12,7 +12,6 @@
     "coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.3",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.15.0",
     "html2canvas": "^1.4.1",

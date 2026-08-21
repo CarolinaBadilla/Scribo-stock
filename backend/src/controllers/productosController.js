@@ -1,0 +1,83 @@
+const db = require('../config/db');
+
+// GET /api/productos/buscar?codigo=XXX&sucursal=1
+const buscarProductoPorCodigo = async (req, res) => {
+  try {
+    const { codigo, sucursal } = req.query;
+
+    if (!codigo) {
+      return res.status(400).json({ error: 'El código de barras es requerido' });
+    }
+
+    const sucursalId = sucursal ? parseInt(sucursal) : 1;
+
+    // 1. Buscar en tabla 'libros'
+    const libroRes = await db.query(
+      'SELECT * FROM libros WHERE codigo_barras = $1 LIMIT 1',
+      [codigo]
+    );
+
+    if (libroRes.rows.length > 0) {
+      const libro = libroRes.rows[0];
+
+      const stockRes = await db.query(
+        'SELECT cantidad, stock_minimo FROM stock WHERE tipo_producto = $1 AND producto_id = $2 AND sucursal_id = $3 LIMIT 1',
+        ['libro', libro.id, sucursalId]
+      );
+
+      const stock = stockRes.rows[0];
+
+      return res.json({
+        tipo_producto: 'libro',
+        producto_id: libro.id,
+        nombre_producto: libro.titulo,
+        precio_efectivo: Number(libro.precio_efectivo) || 0,
+        precio_tarjeta: Number(libro.precio_tarjeta) || Number(libro.precio_efectivo) || 0,
+        cantidad: stock ? stock.cantidad : 0,
+        stock_minimo: stock ? stock.stock_minimo : 5,
+        autor: libro.autor,
+        editorial: libro.editorial
+      });
+    }
+
+    // 2. Buscar en tabla 'ropa'
+    const ropaRes = await db.query(
+      'SELECT * FROM ropa WHERE codigo_barras = $1 LIMIT 1',
+      [codigo]
+    );
+
+    if (ropaRes.rows.length > 0) {
+      const ropa = ropaRes.rows[0];
+
+      const stockRes = await db.query(
+        'SELECT cantidad, stock_minimo FROM stock WHERE tipo_producto = $1 AND producto_id = $2 AND sucursal_id = $3 LIMIT 1',
+        ['ropa', ropa.id, sucursalId]
+      );
+
+      const stock = stockRes.rows[0];
+
+      return res.json({
+        tipo_producto: 'ropa',
+        producto_id: ropa.id,
+        nombre_producto: ropa.nombre,
+        precio_efectivo: Number(ropa.precio_efectivo) || 0,
+        precio_tarjeta: Number(ropa.precio_tarjeta) || Number(ropa.precio_efectivo) || 0,
+        cantidad: stock ? stock.cantidad : 0,
+        stock_minimo: stock ? stock.stock_minimo : 5,
+        colegio: ropa.colegio,
+        talle: ropa.talle,
+        color: ropa.color,
+        precio_compra: ropa.precio_compra
+      });
+    }
+
+    return res.status(404).json({ error: 'Producto no encontrado' });
+  } catch (error) {
+    console.error('❌ Error en búsqueda de producto:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  buscarProductoPorCodigo,
+};

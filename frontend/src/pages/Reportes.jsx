@@ -4,10 +4,8 @@ import { formatMoney, formatDate } from '../utils/formatters';
 import * as XLSX from 'xlsx';
 import { Estadisticas } from '../components/Estadisticas';
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const esJefe = user.rol === 'jefe';
-
 export function Reportes() {
+  const [usuario, setUsuario] = useState(null);
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [tipoReporte, setTipoReporte] = useState('ventas');
@@ -16,28 +14,36 @@ export function Reportes() {
   const [datos, setDatos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
-  const [renderKey, setRenderKey] = useState(0);
 
+  // 1. Cargar usuario de localStorage al montar
   useEffect(() => {
-  cargarSucursales();
-  // Forzar recarga de estadísticas después de 500ms
-  setTimeout(() => {
-    setEstadisticasKey(prev => prev + 1);
-  }, 500);
-}, []);
+    const userLocal = localStorage.getItem('user') || localStorage.getItem('usuario');
+    if (userLocal) {
+      try {
+        setUsuario(JSON.parse(userLocal));
+      } catch (e) {
+        console.error('Error parseando usuario local:', e);
+      }
+    }
+    cargarSucursales();
+  }, []);
 
+  // 2. Cargar datos cuando cambie sucursal o filtros
   useEffect(() => {
     if (sucursalId) {
       cargarDatos();
     }
   }, [tipoReporte, fechaInicio, fechaFin, sucursalId]);
 
+  const esJefe = usuario?.rol === 'jefe' || usuario?.rol === 'DUENO';
+
   const cargarSucursales = async () => {
     try {
       const response = await api.get('/sucursales');
-      setSucursales(response.data);
-      if (response.data.length > 0) {
-        setSucursalId(response.data[0].id);
+      const data = response.data || [];
+      setSucursales(data);
+      if (data.length > 0) {
+        setSucursalId(data[0].id);
       }
     } catch (error) {
       console.error('Error cargando sucursales:', error);
@@ -74,23 +80,17 @@ export function Reportes() {
       setDatos(response.data || []);
     } catch (error) {
       console.error('Error cargando datos:', error);
-      alert('Error al cargar los datos');
     } finally {
       setLoading(false);
     }
   };
 
   const exportarExcel = () => {
-    if (datos.length === 0) {
-      alert('No hay datos para exportar');
-      return;
-    }
-    
+    if (datos.length === 0) return;
     setExportando(true);
     
     try {
       let datosExcel = [];
-      
       switch (tipoReporte) {
         case 'ventas':
           datosExcel = datos.map(item => ({
@@ -103,7 +103,6 @@ export function Reportes() {
             'Sucursal': item.sucursal || '-'
           }));
           break;
-          
         case 'compras':
           datosExcel = datos.map(item => ({
             'Fecha': formatDate(item.fecha),
@@ -114,7 +113,6 @@ export function Reportes() {
             'Sucursal': item.sucursal || '-'
           }));
           break;
-          
         case 'stock':
           datosExcel = datos.map(item => ({
             'Producto': item.nombre_producto || '-',
@@ -126,7 +124,6 @@ export function Reportes() {
             'Sucursal': item.sucursal_nombre || '-'
           }));
           break;
-          
         case 'movimientos':
           datosExcel = datos.map(item => ({
             'Fecha': formatDate(item.fecha),
@@ -138,27 +135,20 @@ export function Reportes() {
             'Sucursal': item.sucursal || '-'
           }));
           break;
-          
         default:
           datosExcel = datos;
       }
       
-      // Crear libro de Excel
       const worksheet = XLSX.utils.json_to_sheet(datosExcel);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
       
-      // Generar nombre del archivo
       const fechaActual = new Date().toISOString().split('T')[0];
       const nombreArchivo = `reporte_${tipoReporte}_${fechaActual}.xlsx`;
       
-      // Descargar archivo
       XLSX.writeFile(workbook, nombreArchivo);
-      
-      alert(`✅ Reporte exportado como ${nombreArchivo}`);
     } catch (error) {
       console.error('Error exportando:', error);
-      alert('Error al exportar el reporte');
     } finally {
       setExportando(false);
     }
@@ -186,7 +176,6 @@ export function Reportes() {
 
   const renderFila = (item, index) => {
     if (!item) return null;
-    
     switch (tipoReporte) {
       case 'ventas':
         return (
@@ -259,15 +248,14 @@ export function Reportes() {
       <div className="max-w-full mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">📄 Reportes y Exportaciones</h1>
 
-
-        {esJefe && (
+        {/* Muestra las estadísticas inmediatamente cuando la sucursal/datos estén listos */}
+        {esJefe && sucursales.length > 0 && (
           <div className="mb-8">
-            <Estadisticas key={renderKey} sucursales={sucursales} />
+            <Estadisticas sucursales={sucursales} sucursalId={sucursalId} />
           </div>
         )}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Panel de filtros */}
           <div className="bg-white rounded-xl shadow-sm p-5">
             <h2 className="text-lg font-bold mb-4">Filtros</h2>
             
@@ -333,7 +321,6 @@ export function Reportes() {
             </div>
           </div>
           
-          {/* Vista previa */}
           <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-5">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">Vista previa</h2>
@@ -350,7 +337,6 @@ export function Reportes() {
               <div className="text-center py-12 text-gray-500">
                 <p className="text-4xl mb-2">📭</p>
                 <p>No hay datos para mostrar</p>
-                <p className="text-sm mt-1">Seleccioná filtros para ver los datos</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
