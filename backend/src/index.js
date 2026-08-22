@@ -77,6 +77,7 @@ const ventasRoutes = require('./routes/ventas');
 const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const autenticacionRoutes = require('./routes/autenticacion');
+const reportesRoutes = require('./routes/reportes');
 
 app.use('/api/autenticacion', autenticacionRoutes);
 app.use('/api/sucursales', sucursalesRoutes);
@@ -85,6 +86,8 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api/reportes', reportesRoutes);
+app.use('/api/estadisticas', reportesRoutes);
 
 // 6. Rutas de diagnóstico
 app.get('/api/health', (req, res) => {
