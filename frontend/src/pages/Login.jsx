@@ -1,7 +1,6 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -16,7 +15,7 @@ export function Login() {
       window.location.href = '/ventas';
     }
   }, []);
-  
+
   const handleSubmit = async (e) => {
       e.preventDefault();
       setError('');
