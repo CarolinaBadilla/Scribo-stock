@@ -78,6 +78,70 @@ const buscarProductoPorCodigo = async (req, res) => {
   }
 };
 
+// Agregar esta función dentro de src/controllers/productosController.js
+
+const crearProducto = async (req, res) => {
+  const { 
+    tipo, // 'libro' o 'ropa'
+    codigo_barras, 
+    nombre, // o titulo para libros
+    autor, 
+    editorial, 
+    colegio, 
+    talle, 
+    color, 
+    precio_compra, 
+    precio_efectivo, 
+    precio_tarjeta,
+    sucursal_id,
+    cantidad_inicial = 0 
+  } = req.body;
+
+  try {
+    let nuevoProductoId;
+
+    if (tipo === 'libro') {
+      const resultLibro = await pool.query(
+        `INSERT INTO libros (codigo_barras, titulo, autor, editorial, precio_compra, precio_efectivo, precio_tarjeta)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+        [codigo_barras, nombre, autor, editorial, precio_compra || 0, precio_efectivo || 0, precio_tarjeta || 0]
+      );
+      nuevoProductoId = resultLibro.rows[0].id;
+    } else if (tipo === 'ropa') {
+      const resultRopa = await pool.query(
+        `INSERT INTO ropa (codigo_barras, nombre, colegio, talle, color, precio_compra, precio_efectivo, precio_tarjeta)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id`,
+        [codigo_barras, nombre, colegio || '', talle, color, precio_compra || 0, precio_efectivo || 0, precio_tarjeta || 0]
+      );
+      nuevoProductoId = resultRopa.rows[0].id;
+    } else {
+      return res.status(400).json({ error: 'El tipo de producto debe ser "libro" o "ropa"' });
+    }
+
+    // Si se especifica una sucursal, inicializamos el registro de stock
+    if (sucursal_id) {
+      await pool.query(
+        `INSERT INTO stock_sucursales (producto_id, sucursal_id, cantidad)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (producto_id, sucursal_id) 
+         DO UPDATE SET cantidad = stock_sucursales.cantidad + EXCLUDED.cantidad`,
+        [nuevoProductoId, sucursal_id, cantidad_inicial]
+      );
+    }
+
+    res.status(201).json({ 
+      mensaje: 'Producto creado exitosamente', 
+      id: nuevoProductoId 
+    });
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    res.status(500).json({ error: 'Error al registrar el producto en la base de datos' });
+  }
+};
+
 module.exports = {
   buscarProductoPorCodigo,
+  crearProducto
 };
