@@ -128,13 +128,17 @@ main > div > *:last-child {
 }
 
 /* Botones vintage apagados */
-button,
-.btn {
-  padding: 0.375rem 0.875rem !important;
-  font-size: 0.8125rem !important;
-  border-radius: 0.5rem !important;
-  transition: all 0.2s ease !important;
-  font-weight: 500 !important;
+/* index.css */
+button {
+  color: inherit;
+}
+.btn-primary {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+}
+.btn-success {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
 }
 
 button.bg-green-500,

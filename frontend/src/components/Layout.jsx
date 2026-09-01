@@ -58,107 +58,44 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-[#f5f0e8] flex flex-col text-[#5a4a3a]">
       {/* Barra de Navegación Principal */}
-      <nav className="bg-[#fefcf8] border-b border-[#e2d8cc] sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 md:h-20">
-            
-            {/* Identidad / Logo */}
-            <Link to={isMobile ? "/dashboard" : "/"} className="flex items-center gap-3 group shrink-0">
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-[#f5f0e8] border border-[#e2d8cc] p-1.5 flex items-center justify-center group-hover:border-[#c9a87b] transition-all">
-                <img 
-                  src="/imagenes/Logo Scribo.png" 
-                  alt="Scribo Logo" 
-                  className="w-full h-full object-contain"
-                  onError={(e) => { 
-                    e.target.onerror = null; 
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📚%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-              <div>
-                <span className="text-lg md:text-xl font-bold tracking-tight text-[#5a4a3a] group-hover:text-[#c9a87b] transition-colors block">
-                  Scribo
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#8a7a6a] -mt-1 block">
-                  Stock System
-                </span>
-              </div>
-            </Link>
-            
-            {/* Navegación Desktop */}
-            {!isMobile && (
-              <div className="hidden md:flex items-center gap-1.5 bg-[#f5f0e8]/50 p-1.5 rounded-2xl border border-[#e2d8cc]/60">
-                <Link to="/" className={linkClass('/')}>
-                  <span>🛒</span> Ventas
-                </Link>
-                <Link to="/dashboard" className={linkClass('/dashboard')}>
-                  <span>📊</span> Stock
-                </Link>
-                <Link to="/compras" className={linkClass('/compras')}>
-                  <span>📦</span> Compras
-                </Link>
-                <Link to="/reportes" className={linkClass('/reportes')}>
-                  <span>📄</span> Reportes
-                </Link>
-              </div>
-            )}
-            
-            {/* Panel de Usuario & Acciones */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="flex items-center gap-2.5 bg-[#f5f0e8]/40 pl-2.5 pr-3 py-1.5 rounded-xl border border-[#e2d8cc]/60">
-                <div className="w-8 h-8 rounded-lg bg-[#c9a87b] flex items-center justify-center shadow-xs">
-                  <span className="text-white text-xs font-bold uppercase">
-                    {(user.email || user.usuario || 'U').charAt(0)}
-                  </span>
-                </div>
-                <div className="hidden lg:block text-left">
-                  <p className="text-xs font-bold text-[#5a4a3a] leading-tight">
-                    {(user.email || user.usuario || 'Usuario').split('@')[0]}
-                  </p>
-                  <p className="text-[10px] font-semibold text-[#8a7a6a] capitalize">
-                    {user.rol === 'jefe' || user.rol === 'DUENO' ? 'Administrador' : 'Empleado'}
-                  </p>
-                </div>
-              </div>
+      <nav className="w-full bg-amber-50/50 border-b border-amber-200/60 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+          
+          {/* Módulos de navegación */}
+          <div className="flex flex-wrap items-center gap-2">
+            <NavLink to="/ventas" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
+              🛒 Ventas
+            </NavLink>
+            <NavLink to="/stock" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
+              📊 Stock
+            </NavLink>
+            <NavLink to="/compras" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
+              📦 Compras
+            </NavLink>
+            <NavLink to="/reportes" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
+              📄 Reportes
+            </NavLink>
+          </div>
 
-              <button
-                onClick={handleLogout}
-                className="px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all"
-                title="Cerrar sesión"
-              >
-                Salir
-              </button>
-
-              {/* Botón Menú Móvil */}
-              {isMobile && (
-                <button
-                  onClick={() => setMenuAbierto(!menuAbierto)}
-                  className="p-2 rounded-xl bg-white border border-[#e2d8cc] text-[#5a4a3a] hover:bg-[#f5f0e8] text-lg font-bold"
-                >
-                  {menuAbierto ? '✕' : '☰'}
-                </button>
-              )}
+          {/* Info Usuario & Salir */}
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm">
+              <div className="w-7 h-7 rounded-lg bg-amber-600 text-white font-bold flex items-center justify-center text-xs">
+                A
+              </div>
+              <div className="text-left leading-none">
+                <p className="text-xs font-bold text-gray-800">admin</p>
+                <p className="text-[10px] text-gray-500">Administrador</p>
+              </div>
             </div>
+            <button 
+              onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
+              className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors"
+            >
+              Salir
+            </button>
           </div>
         </div>
-
-        {/* Desplegable Móvil */}
-        {isMobile && menuAbierto && (
-          <div className="md:hidden border-t border-[#e2d8cc] bg-[#fefcf8] px-4 py-3 space-y-1 shadow-lg">
-            <Link to="/" onClick={() => setMenuAbierto(false)} className={mobileLinkClass('/')}>
-              <span>🛒</span> Ventas
-            </Link>
-            <Link to="/dashboard" onClick={() => setMenuAbierto(false)} className={mobileLinkClass('/dashboard')}>
-              <span>📊</span> Control de Stock
-            </Link>
-            <Link to="/compras" onClick={() => setMenuAbierto(false)} className={mobileLinkClass('/compras')}>
-              <span>📦</span> Registro de Compras
-            </Link>
-            <Link to="/reportes" onClick={() => setMenuAbierto(false)} className={mobileLinkClass('/reportes')}>
-              <span>📄</span> Reportes e Históricos
-            </Link>
-          </div>
-        )}
       </nav>
       
       {/* Contenedor Principal */}

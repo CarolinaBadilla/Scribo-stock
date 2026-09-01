@@ -10,43 +10,44 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (authError) throw authError;
-
-      const { data: perfil, error: perfilError } = await supabase
-        .from('perfiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (perfilError) throw perfilError;
-
-      localStorage.setItem('token', data.session.access_token);
-      localStorage.setItem('user', JSON.stringify({
-        id: data.user.id,
-        email: data.user.email,
-        rol: perfil.rol,
-        sucursalId: perfil.sucursal_id
-      }));
-
-      navigate('/');
-    } catch (err) {
-      setError('Email o contraseña incorrectos');
-      console.error('Error:', err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      window.location.href = '/ventas';
     }
-  };
+  }, []);
+  
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      setError('');
+      setLoading(true);
+
+      try {
+        // Petición al backend propio (api.scribo.com.ar)
+        const response = await api.post('/autenticacion/iniciar-sesion', {
+          email,     // O usuario, según lo que ingrese el cliente
+          clave: password
+        });
+
+        const { token, usuario } = response.data;
+
+        if (token) {
+          // 1. Guardar token y datos del usuario en localStorage
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(usuario));
+
+          // 2. Redirección completa para recargar el AuthContext y montar la app limpia
+          window.location.href = '/ventas';
+        }
+      } catch (err) {
+        console.error('Error al iniciar sesión:', err);
+        setError(
+          err.response?.data?.error || 'Email o contraseña incorrectos'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4">
