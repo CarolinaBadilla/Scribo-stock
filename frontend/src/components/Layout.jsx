@@ -66,7 +66,7 @@ export function Layout() {
             <NavLink to="/ventas" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
               🛒 Ventas
             </NavLink>
-            <NavLink to="/stock" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
+            <NavLink to="/dashboard" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
               📊 Stock
             </NavLink>
             <NavLink to="/compras" className={({isActive}) => `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white shadow-sm text-amber-900 border border-amber-200' : 'text-amber-800 hover:bg-white/60'}`}>
