@@ -103,7 +103,7 @@ const crearProducto = async (req, res) => {
 
     if (tipoNormalizado === 'libro') {
       const resultLibro = await db.query(
-        `INSERT INTO libros (codigo_barras, titulo, autor, editorial, precio_compra, precio_efectivo, precio_tarjeta)
+        `INSERT INTO libros (codigo_barra, titulo, autor, editorial, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
         [codigo_barras, nombre, autor, editorial, precio_compra || 0, precio_efectivo || 0, precio_tarjeta || 0]
@@ -111,7 +111,7 @@ const crearProducto = async (req, res) => {
       nuevoProductoId = resultLibro.rows[0].id;
     } else if (tipoNormalizado === 'ropa') {
       const resultRopa = await db.query(
-        `INSERT INTO ropa (codigo_barras, nombre, colegio, talle, color, precio_compra, precio_efectivo, precio_tarjeta)
+        `INSERT INTO ropa (codigo_barra, nombre, colegio, talle, color, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id`,
         [codigo_barras, nombre, colegio || '', talle, color, precio_compra || 0, precio_efectivo || 0, precio_tarjeta || 0]
@@ -121,7 +121,6 @@ const crearProducto = async (req, res) => {
       return res.status(400).json({ error: 'El tipo de producto debe ser "libro" o "ropa"' });
     }
 
-    // Registrar o actualizar stock inicial
     if (sucursal_id) {
       await db.query(
         `INSERT INTO stock (tipo_producto, producto_id, sucursal_id, cantidad, stock_minimo)

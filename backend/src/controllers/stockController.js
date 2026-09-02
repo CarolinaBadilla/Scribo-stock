@@ -21,8 +21,8 @@ const obtenerStockPorSucursal = async (req, res) => {
           WHEN st.tipo_producto = 'ropa' THEN r.nombre
         END AS nombre_producto,
         CASE 
-          WHEN st.tipo_producto = 'libro' THEN l.codigo_barras
-          WHEN st.tipo_producto = 'ropa' THEN r.codigo_barras
+          WHEN st.tipo_producto = 'libro' THEN l.codigo_barra
+          WHEN st.tipo_producto = 'ropa' THEN r.codigo_barra
         END AS codigo_barras,
         CASE 
           WHEN st.tipo_producto = 'libro' THEN l.precio_efectivo
