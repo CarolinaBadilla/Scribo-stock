@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
