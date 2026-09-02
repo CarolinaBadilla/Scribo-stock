@@ -1,10 +1,12 @@
 const db = require('../config/db');
 
 // GET /api/stock?sucursalId=1
+// GET /api/stock/por-sucursal/:sucursalId o /api/stock?sucursalId=1
 const obtenerStockPorSucursal = async (req, res) => {
   try {
+    // Lee sucursalId desde params (/por-sucursal/1) o query (?sucursalId=1)
     const sucursalId = req.params.sucursalId || req.query.sucursalId;
-    
+
     let sql = `
       SELECT 
         st.id,
@@ -19,7 +21,7 @@ const obtenerStockPorSucursal = async (req, res) => {
           WHEN st.tipo_producto = 'ropa' THEN r.nombre
         END AS nombre_producto,
         CASE 
-          WHEN st.tipo_producto = 'libro' THEN l.codigo_barras
+          WHEN st.tipo_producto = 'libro' THEN l.codigo_barra
           WHEN st.tipo_producto = 'ropa' THEN r.codigo_barras
         END AS codigo_barras,
         CASE 
@@ -42,7 +44,7 @@ const obtenerStockPorSucursal = async (req, res) => {
 
     const params = [];
     if (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined') {
-      params.push(parseInt(sucursalId));
+      params.push(parseInt(sucursalId, 10));
       sql += ` WHERE st.sucursal_id = $${params.length}`;
     }
 
@@ -55,6 +57,7 @@ const obtenerStockPorSucursal = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // PUT /api/stock/actualizar
 const actualizarCantidadStock = async (req, res) => {
