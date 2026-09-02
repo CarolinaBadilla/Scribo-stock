@@ -1,7 +1,8 @@
 // src/services/api.js
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+// ⚠️ Cambiar localhost:3002 por la URL de producción por defecto
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.scribo.com.ar/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -30,7 +31,6 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
-      // Prevenir bucle infinito si ya se encuentra en la pantalla de login
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';
       }

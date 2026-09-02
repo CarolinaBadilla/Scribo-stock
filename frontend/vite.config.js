@@ -26,5 +26,6 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     bundle: 'rollup'
-  }
+  },
+  base: '/',
 })
