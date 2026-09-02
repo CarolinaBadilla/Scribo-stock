@@ -81,11 +81,9 @@ const buscarProductoPorCodigo = async (req, res) => {
 // Agregar esta función dentro de src/controllers/productosController.js
 
 const crearProducto = async (req, res) => {
-
   const tipoNormalizado = req.body.tipo ? req.body.tipo.toString().trim().toLowerCase() : '';
 
   const { 
-    tipo, 
     codigo_barras, 
     nombre, 
     autor, 
@@ -104,7 +102,7 @@ const crearProducto = async (req, res) => {
     let nuevoProductoId;
 
     if (tipoNormalizado === 'libro') {
-      const resultLibro = await pool.query(
+      const resultLibro = await db.query(
         `INSERT INTO libros (codigo_barras, titulo, autor, editorial, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
@@ -112,7 +110,7 @@ const crearProducto = async (req, res) => {
       );
       nuevoProductoId = resultLibro.rows[0].id;
     } else if (tipoNormalizado === 'ropa') {
-      const resultRopa = await pool.query(
+      const resultRopa = await db.query(
         `INSERT INTO ropa (codigo_barras, nombre, colegio, talle, color, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id`,
@@ -123,14 +121,14 @@ const crearProducto = async (req, res) => {
       return res.status(400).json({ error: 'El tipo de producto debe ser "libro" o "ropa"' });
     }
 
-    // Si se especifica una sucursal, inicializamos el registro de stock
+    // Registrar o actualizar stock inicial
     if (sucursal_id) {
-      await pool.query(
-        `INSERT INTO stock_sucursales (producto_id, sucursal_id, cantidad)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (producto_id, sucursal_id) 
-         DO UPDATE SET cantidad = stock_sucursales.cantidad + EXCLUDED.cantidad`,
-        [nuevoProductoId, sucursal_id, cantidad_inicial]
+      await db.query(
+        `INSERT INTO stock (tipo_producto, producto_id, sucursal_id, cantidad, stock_minimo)
+         VALUES ($1, $2, $3, $4, 5)
+         ON CONFLICT (tipo_producto, producto_id, sucursal_id) 
+         DO UPDATE SET cantidad = stock.cantidad + EXCLUDED.cantidad`,
+        [tipoNormalizado, nuevoProductoId, sucursal_id, cantidad_inicial]
       );
     }
 
