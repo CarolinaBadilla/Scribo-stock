@@ -3,8 +3,8 @@ const db = require('../config/db');
 // GET /api/stock?sucursalId=1
 const obtenerStockPorSucursal = async (req, res) => {
   try {
-    const { sucursalId } = req.query;
-
+    const sucursalId = req.params.sucursalId || req.query.sucursalId;
+    
     let sql = `
       SELECT 
         st.id,

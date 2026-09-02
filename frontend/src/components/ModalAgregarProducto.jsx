@@ -59,6 +59,7 @@ export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
 
     try {
       const payload = {
+        tipo: tipo,
         tipo_producto: tipo,
         sucursal_id: sucursalId,
         codigo_barras: formData.codigo_barras.trim(),
