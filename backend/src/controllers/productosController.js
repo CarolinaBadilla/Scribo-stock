@@ -81,10 +81,13 @@ const buscarProductoPorCodigo = async (req, res) => {
 // Agregar esta función dentro de src/controllers/productosController.js
 
 const crearProducto = async (req, res) => {
+
+  const tipoNormalizado = req.body.tipo ? req.body.tipo.toString().trim().toLowerCase() : '';
+
   const { 
-    tipo, // 'libro' o 'ropa'
+    tipo, 
     codigo_barras, 
-    nombre, // o titulo para libros
+    nombre, 
     autor, 
     editorial, 
     colegio, 
@@ -100,7 +103,7 @@ const crearProducto = async (req, res) => {
   try {
     let nuevoProductoId;
 
-    if (tipo === 'libro') {
+    if (tipoNormalizado === 'libro') {
       const resultLibro = await pool.query(
         `INSERT INTO libros (codigo_barras, titulo, autor, editorial, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -108,7 +111,7 @@ const crearProducto = async (req, res) => {
         [codigo_barras, nombre, autor, editorial, precio_compra || 0, precio_efectivo || 0, precio_tarjeta || 0]
       );
       nuevoProductoId = resultLibro.rows[0].id;
-    } else if (tipo === 'ropa') {
+    } else if (tipoNormalizado === 'ropa') {
       const resultRopa = await pool.query(
         `INSERT INTO ropa (codigo_barras, nombre, colegio, talle, color, precio_compra, precio_efectivo, precio_tarjeta)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
