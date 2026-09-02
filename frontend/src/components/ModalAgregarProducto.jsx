@@ -1,5 +1,5 @@
 // src/components/ModalAgregarProducto.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 
 export function ModalAgregarProducto({ sucursalId, onClose, onAgregar }) {
