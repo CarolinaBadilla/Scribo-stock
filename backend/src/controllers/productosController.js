@@ -218,13 +218,9 @@ const actualizarProducto = async (req, res) => {
   }
 };
 
-module.exports = {
-  buscarProductoPorCodigo: productosController.buscarProductoPorCodigo, // o como los tengas exportados
-  crearProducto: productosController.crearProducto,
-  actualizarProducto, // 👈 Importante incluirlo en la exportación
-};
 
 module.exports = {
   buscarProductoPorCodigo,
-  crearProducto
+  crearProducto,
+    actualizarProducto
 };
