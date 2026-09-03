@@ -141,6 +141,89 @@ const crearProducto = async (req, res) => {
   }
 };
 
+const actualizarProducto = async (req, res) => {
+  const { tipo, id } = req.params;
+  const tipoNormalizado = tipo ? tipo.toString().trim().toLowerCase() : '';
+
+  const { 
+    codigo_barras, 
+    nombre, 
+    autor, 
+    editorial, 
+    colegio, 
+    talle, 
+    color, 
+    precio_compra, 
+    precio_efectivo, 
+    precio_tarjeta 
+  } = req.body;
+
+  try {
+    if (tipoNormalizado === 'libro') {
+      const result = await db.query(
+        `UPDATE libros 
+         SET codigo_barras = $1, titulo = $2, autor = $3, editorial = $4, 
+             precio_efectivo = $5, precio_tarjeta = $6, updated_at = NOW()
+         WHERE id = $7
+         RETURNING *`,
+        [
+          codigo_barras ? codigo_barras.trim() : null,
+          nombre,
+          autor || null,
+          editorial || null,
+          precio_efectivo || 0,
+          precio_tarjeta || 0,
+          parseInt(id, 10)
+        ]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Libro no encontrado' });
+      }
+
+      return res.json({ mensaje: 'Libro actualizado correctamente', producto: result.rows[0] });
+
+    } else if (tipoNormalizado === 'ropa') {
+      const result = await db.query(
+        `UPDATE ropa 
+         SET codigo_barras = $1, nombre = $2, colegio = $3, talle = $4, color = $5, 
+             precio_compra = $6, precio_efectivo = $7, precio_tarjeta = $8, updated_at = NOW()
+         WHERE id = $9
+         RETURNING *`,
+        [
+          codigo_barras ? codigo_barras.trim() : null,
+          nombre,
+          colegio || null,
+          talle || null,
+          color || null,
+          precio_compra || 0,
+          precio_efectivo || 0,
+          precio_tarjeta || 0,
+          parseInt(id, 10)
+        ]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Prenda de ropa no encontrada' });
+      }
+
+      return res.json({ mensaje: 'Producto de ropa actualizado correctamente', producto: result.rows[0] });
+
+    } else {
+      return res.status(400).json({ error: 'El tipo de producto debe ser "libro" o "ropa"' });
+    }
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+    res.status(500).json({ error: 'Error al actualizar el producto en la base de datos' });
+  }
+};
+
+module.exports = {
+  buscarProductoPorCodigo: productosController.buscarProductoPorCodigo, // o como los tengas exportados
+  crearProducto: productosController.crearProducto,
+  actualizarProducto, // 👈 Importante incluirlo en la exportación
+};
+
 module.exports = {
   buscarProductoPorCodigo,
   crearProducto
