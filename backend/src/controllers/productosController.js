@@ -224,9 +224,43 @@ const actualizarProducto = async (req, res) => {
   }
 };
 
+const eliminarProducto = async (req, res) => {
+  const { tipo, id } = req.params;
+  const tipoNormalizado = tipo ? tipo.toString().trim().toLowerCase() : '';
+  const productoId = parseInt(id, 10);
+
+  try {
+    // 1. Primero eliminar referencias en la tabla stock
+    await db.query(
+      `DELETE FROM stock WHERE tipo_producto = $1 AND producto_id = $2`,
+      [tipoNormalizado, productoId]
+    );
+
+    // 2. Eliminar de la tabla correspondiente
+    let result;
+    if (tipoNormalizado === 'libro') {
+      result = await db.query(`DELETE FROM libros WHERE id = $1`, [productoId]);
+    } else if (tipoNormalizado === 'ropa') {
+      result = await db.query(`DELETE FROM ropa WHERE id = $1`, [productoId]);
+    } else {
+      return res.status(400).json({ error: 'Tipo de producto inválido' });
+    }
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.json({ mensaje: 'Producto eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
+    res.status(500).json({ error: 'Error al eliminar el producto en la base de datos' });
+  }
+};
+
 
 module.exports = {
   buscarProductoPorCodigo,
   crearProducto,
-    actualizarProducto
+  actualizarProducto,
+  eliminarProducto,
 };
