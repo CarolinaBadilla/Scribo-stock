@@ -141,6 +141,7 @@ const crearProducto = async (req, res) => {
   }
 };
 
+
 const actualizarProducto = async (req, res) => {
   const { tipo, id } = req.params;
   const tipoNormalizado = tipo ? tipo.toString().trim().toLowerCase() : '';
@@ -162,59 +163,64 @@ const actualizarProducto = async (req, res) => {
     if (tipoNormalizado === 'libro') {
       const result = await db.query(
         `UPDATE libros 
-         SET codigo_barras = $1, titulo = $2, autor = $3, editorial = $4, 
-             precio_efectivo = $5, precio_tarjeta = $6, updated_at = NOW()
+         SET codigo_barras = COALESCE(NULLIF($1, ''), codigo_barras),
+             titulo = COALESCE(NULLIF($2, ''), titulo),
+             autor = COALESCE(NULLIF($3, ''), autor),
+             editorial = COALESCE(NULLIF($4, ''), editorial),
+             precio_efectivo = COALESCE($5, precio_efectivo),
+             precio_tarjeta = COALESCE($6, precio_tarjeta),
+             updated_at = NOW()
          WHERE id = $7
          RETURNING *`,
         [
           codigo_barras ? codigo_barras.trim() : null,
-          nombre,
+          nombre || null,
           autor || null,
           editorial || null,
-          precio_efectivo || 0,
-          precio_tarjeta || 0,
+          precio_efectivo !== undefined && precio_efectivo !== '' ? parseFloat(precio_efectivo) : null,
+          precio_tarjeta !== undefined && precio_tarjeta !== '' ? parseFloat(precio_tarjeta) : null,
           parseInt(id, 10)
         ]
       );
 
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Libro no encontrado' });
-      }
-
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Libro no encontrado' });
       return res.json({ mensaje: 'Libro actualizado correctamente', producto: result.rows[0] });
 
     } else if (tipoNormalizado === 'ropa') {
       const result = await db.query(
         `UPDATE ropa 
-         SET codigo_barras = $1, nombre = $2, colegio = $3, talle = $4, color = $5, 
-             precio_compra = $6, precio_efectivo = $7, precio_tarjeta = $8, updated_at = NOW()
+         SET codigo_barras = COALESCE(NULLIF($1, ''), codigo_barras),
+             nombre = COALESCE(NULLIF($2, ''), nombre),
+             colegio = COALESCE(NULLIF($3, ''), colegio),
+             talle = COALESCE(NULLIF($4, ''), talle),
+             color = COALESCE(NULLIF($5, ''), color),
+             precio_compra = COALESCE($6, precio_compra),
+             precio_efectivo = COALESCE($7, precio_efectivo),
+             precio_tarjeta = COALESCE($8, precio_tarjeta),
+             updated_at = NOW()
          WHERE id = $9
          RETURNING *`,
         [
           codigo_barras ? codigo_barras.trim() : null,
-          nombre,
+          nombre || null,
           colegio || null,
           talle || null,
           color || null,
-          precio_compra || 0,
-          precio_efectivo || 0,
-          precio_tarjeta || 0,
+          precio_compra !== undefined && precio_compra !== '' ? parseFloat(precio_compra) : null,
+          precio_efectivo !== undefined && precio_efectivo !== '' ? parseFloat(precio_efectivo) : null,
+          precio_tarjeta !== undefined && precio_tarjeta !== '' ? parseFloat(precio_tarjeta) : null,
           parseInt(id, 10)
         ]
       );
 
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Prenda de ropa no encontrada' });
-      }
-
-      return res.json({ mensaje: 'Producto de ropa actualizado correctamente', producto: result.rows[0] });
-
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Prenda no encontrada' });
+      return res.json({ mensaje: 'Producto actualizado correctamente', producto: result.rows[0] });
     } else {
-      return res.status(400).json({ error: 'El tipo de producto debe ser "libro" o "ropa"' });
+      return res.status(400).json({ error: 'Tipo inválido' });
     }
   } catch (error) {
-    console.error('Error al actualizar producto:', error);
-    res.status(500).json({ error: 'Error al actualizar el producto en la base de datos' });
+    console.error('Error actualizando producto:', error);
+    res.status(500).json({ error: 'Error al actualizar el producto' });
   }
 };
 
