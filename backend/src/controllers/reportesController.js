@@ -201,9 +201,68 @@ const obtenerMovimientos = async (req, res) => {
   }
 };
 
+const obtenerEstadisticas = async (req, res) => {
+  try {
+    const { periodo = '7d', sucursalId } = req.query;
+
+    let dias = 7;
+    if (periodo === '30d') dias = 30;
+    if (periodo === '24h' || periodo === '1d') dias = 1;
+
+    // 1. Total vendido y cantidad de operaciones en el periodo
+    let sqlResumen = `
+      SELECT 
+        COALESCE(SUM(m.cantidad * m.precio_unitario * (1 - (COALESCE(m.descuento_porcentaje, 0) / 100.0))), 0) AS total_ventas,
+        COUNT(m.id) AS cantidad_ventas,
+        COALESCE(SUM(m.cantidad), 0) AS unidades_vendidas
+      FROM movimientos m
+      WHERE m.tipo_movimiento = 'venta'
+        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
+    `;
+
+    const paramsResumen = [dias];
+    if (sucursalId) {
+      paramsResumen.push(sucursalId);
+      sqlResumen += ` AND m.sucursal_id = $2`;
+    }
+
+    const resultResumen = await db.query(sqlResumen, paramsResumen);
+
+    // 2. Productos más vendidos
+    let sqlTop = `
+      SELECT 
+        m.tipo_producto,
+        CASE 
+          WHEN m.tipo_producto = 'libro' THEN l.titulo
+          WHEN m.tipo_producto = 'ropa' THEN r.nombre
+        END AS nombre_producto,
+        SUM(m.cantidad) AS total_unidades
+      FROM movimientos m
+      LEFT JOIN libros l ON m.tipo_producto = 'libro' AND m.producto_id = l.id
+      LEFT JOIN ropa r ON m.tipo_producto = 'ropa' AND m.producto_id = r.id
+      WHERE m.tipo_movimiento = 'venta'
+        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
+      GROUP BY m.tipo_producto, nombre_producto
+      ORDER BY total_unidades DESC
+      LIMIT 5
+    `;
+
+    const resultTop = await db.query(sqlTop, [dias]);
+
+    res.json({
+      resumen: resultResumen.rows[0],
+      topProductos: resultTop.rows
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ error: 'Error al calcular estadísticas' });
+  }
+};
+
 module.exports = {
   obtenerVentas,
   obtenerCompras,
   obtenerStockActual,
   obtenerMovimientos,
+  obtenerEstadisticas,
 };
