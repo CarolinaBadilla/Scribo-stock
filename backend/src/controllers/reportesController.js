@@ -15,9 +15,10 @@ const obtenerVentas = async (req, res) => {
         s.nombre AS sucursal,
         m.tipo_producto,
         CASE 
-          WHEN m.tipo_producto = 'libro' THEN l.titulo
-          WHEN m.tipo_producto = 'ropa' THEN r.nombre
-        END AS nombre_producto,
+          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, m.producto_nombre, 'Producto eliminado')
+          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, m.producto_nombre, 'Producto eliminado')
+          ELSE COALESCE(m.producto_nombre, 'Producto eliminado')
+        END AS nombre_producto
         CASE 
           WHEN m.tipo_producto = 'libro' THEN COALESCE(l.autor, '-')
           WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.talle || ' - ' || r.color, '-')
@@ -70,8 +71,9 @@ const obtenerCompras = async (req, res) => {
         (m.cantidad * m.precio_unitario) AS total,
         s.nombre AS sucursal,
         CASE 
-          WHEN m.tipo_producto = 'libro' THEN l.titulo
-          WHEN m.tipo_producto = 'ropa' THEN r.nombre
+          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, m.producto_nombre, 'Producto eliminado')
+          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, m.producto_nombre, 'Producto eliminado')
+          ELSE COALESCE(m.producto_nombre, 'Producto eliminado')
         END AS nombre_producto
       FROM movimientos m
       LEFT JOIN sucursales s ON m.sucursal_id = s.id
@@ -171,8 +173,9 @@ const obtenerMovimientos = async (req, res) => {
         (m.cantidad * m.precio_unitario) AS total,
         s.nombre AS sucursal,
         CASE 
-          WHEN m.tipo_producto = 'libro' THEN l.titulo
-          WHEN m.tipo_producto = 'ropa' THEN r.nombre
+          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, m.producto_nombre, 'Producto eliminado')
+          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, m.producto_nombre, 'Producto eliminado')
+          ELSE COALESCE(m.producto_nombre, 'Producto eliminado')
         END AS nombre_producto
       FROM movimientos m
       LEFT JOIN sucursales s ON m.sucursal_id = s.id

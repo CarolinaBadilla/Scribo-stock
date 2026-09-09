@@ -95,46 +95,76 @@ export function Reportes() {
         case 'ventas':
           datosExcel = datos.map(item => ({
             'Fecha': formatDate(item.fecha),
-            'Producto': item.nombre_producto || '-',
+            'Producto': item.nombre_producto || 'Producto eliminado',
             'Detalle': item.detalle_producto || '-',
-            'Cantidad': item.cantidad || 0,
-            'Precio Unitario': item.precio_unitario || 0,
-            'Total': item.total || 0,
+            'Cantidad': Number(item.cantidad || 0),
+            'Precio Unitario': Number(item.precio_unitario || 0),
+            'Total': Number(item.total || 0),
             'Sucursal': item.sucursal || '-'
           }));
+          datosExcel.push({
+            'Fecha': '',
+            'Producto': '',
+            'Detalle': '',
+            'Cantidad': '',
+            'Precio Unitario': 'TOTAL:',
+            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
+            'Sucursal': ''
+          });
           break;
+
         case 'compras':
           datosExcel = datos.map(item => ({
             'Fecha': formatDate(item.fecha),
-            'Producto': item.nombre_producto || '-',
-            'Cantidad': item.cantidad || 0,
-            'Precio Unitario': item.precio_unitario || 0,
-            'Total': item.total || 0,
+            'Producto': item.nombre_producto || 'Producto eliminado',
+            'Cantidad': Number(item.cantidad || 0),
+            'Precio Unitario': Number(item.precio_unitario || 0),
+            'Total': Number(item.total || 0),
             'Sucursal': item.sucursal || '-'
           }));
+          datosExcel.push({
+            'Fecha': '',
+            'Producto': '',
+            'Cantidad': '',
+            'Precio Unitario': 'TOTAL:',
+            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
+            'Sucursal': ''
+          });
           break;
+
         case 'stock':
           datosExcel = datos.map(item => ({
             'Producto': item.nombre_producto || '-',
             'Tipo': item.tipo_producto === 'libro' ? 'Libro' : 'Ropa',
             'Detalle': item.detalle || '-',
-            'Stock': item.cantidad || 0,
-            'Precio Efectivo': item.precio_efectivo || 0,
-            'Precio Tarjeta': item.precio_tarjeta || 0,
+            'Stock': Number(item.cantidad || 0),
+            'Precio Efectivo': Number(item.precio_efectivo || 0),
+            'Precio Tarjeta': Number(item.precio_tarjeta || 0),
             'Sucursal': item.sucursal_nombre || '-'
           }));
           break;
+
         case 'movimientos':
           datosExcel = datos.map(item => ({
             'Fecha': formatDate(item.fecha),
             'Tipo': item.tipo || '-',
-            'Producto': item.nombre_producto || '-',
-            'Cantidad': item.cantidad || 0,
-            'Precio Unitario': item.precio_unitario || 0,
-            'Total': item.total || 0,
+            'Producto': item.nombre_producto || 'Producto eliminado',
+            'Cantidad': Number(item.cantidad || 0),
+            'Precio Unitario': Number(item.precio_unitario || 0),
+            'Total': Number(item.total || 0),
             'Sucursal': item.sucursal || '-'
           }));
+          datosExcel.push({
+            'Fecha': '',
+            'Tipo': '',
+            'Producto': '',
+            'Cantidad': '',
+            'Precio Unitario': 'TOTAL:',
+            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
+            'Sucursal': ''
+          });
           break;
+
         default:
           datosExcel = datos;
       }
@@ -156,7 +186,7 @@ export function Reportes() {
 
   const calcularTotal = () => {
     if (tipoReporte === 'stock') return null;
-    return datos.reduce((sum, item) => sum + (item.total || 0), 0);
+    return datos.reduce((sum, item) => sum + Number(item.total || 0), 0);
   };
 
   const getColumnas = () => {
