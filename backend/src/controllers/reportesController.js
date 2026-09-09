@@ -203,59 +203,104 @@ const obtenerMovimientos = async (req, res) => {
 
 const obtenerEstadisticas = async (req, res) => {
   try {
-    const { periodo = '7d', sucursalId } = req.query;
+    const { periodo = '7d', sucursal_id, sucursalId } = req.query;
+    const idSucursal = sucursal_id || sucursalId;
 
     let dias = 7;
     if (periodo === '30d') dias = 30;
+    if (periodo === '90d') dias = 90;
     if (periodo === '24h' || periodo === '1d') dias = 1;
 
-    // 1. Total vendido y cantidad de operaciones en el periodo
-    let sqlResumen = `
+    // 1. Productos más vendidos (masVendidos)
+    let sqlMasVendidos = `
       SELECT 
-        COALESCE(SUM(m.cantidad * m.precio_unitario * (1 - (COALESCE(m.descuento_porcentaje, 0) / 100.0))), 0) AS total_ventas,
-        COUNT(m.id) AS cantidad_ventas,
-        COALESCE(SUM(m.cantidad), 0) AS unidades_vendidas
-      FROM movimientos m
-      WHERE m.tipo_movimiento = 'venta'
-        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
-    `;
-
-    const paramsResumen = [dias];
-    if (sucursalId) {
-      paramsResumen.push(sucursalId);
-      sqlResumen += ` AND m.sucursal_id = $2`;
-    }
-
-    const resultResumen = await db.query(sqlResumen, paramsResumen);
-
-    // 2. Productos más vendidos
-    let sqlTop = `
-      SELECT 
-        m.tipo_producto,
         CASE 
-          WHEN m.tipo_producto = 'libro' THEN l.titulo
-          WHEN m.tipo_producto = 'ropa' THEN r.nombre
-        END AS nombre_producto,
-        SUM(m.cantidad) AS total_unidades
+          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, 'Libro sin título')
+          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, 'Prenda sin nombre')
+          ELSE 'Producto General'
+        END AS nombre,
+        SUM(m.cantidad)::INT AS cantidad
       FROM movimientos m
       LEFT JOIN libros l ON m.tipo_producto = 'libro' AND m.producto_id = l.id
       LEFT JOIN ropa r ON m.tipo_producto = 'ropa' AND m.producto_id = r.id
       WHERE m.tipo_movimiento = 'venta'
         AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
-      GROUP BY m.tipo_producto, nombre_producto
-      ORDER BY total_unidades DESC
-      LIMIT 5
     `;
 
-    const resultTop = await db.query(sqlTop, [dias]);
+    const paramsMasVendidos = [dias];
+    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
+      paramsMasVendidos.push(parseInt(idSucursal, 10));
+      sqlMasVendidos += ` AND m.sucursal_id = $2`;
+    }
 
+    sqlMasVendidos += `
+      GROUP BY nombre
+      ORDER BY cantidad DESC
+      LIMIT 10
+    `;
+
+    const resMasVendidos = await db.query(sqlMasVendidos, paramsMasVendidos);
+
+    // 2. Tendencia de ventas agrupada por día (ventasDiarias)
+    let sqlVentasDiarias = `
+      SELECT 
+        TO_CHAR(m.fecha, 'DD/MM') AS fecha,
+        SUM(m.cantidad * m.precio_unitario * (1 - (COALESCE(m.descuento_porcentaje, 0) / 100.0)))::NUMERIC(10,2) AS total
+      FROM movimientos m
+      WHERE m.tipo_movimiento = 'venta'
+        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
+    `;
+
+    const paramsDiarias = [dias];
+    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
+      paramsDiarias.push(parseInt(idSucursal, 10));
+      sqlVentasDiarias += ` AND m.sucursal_id = $2`;
+    }
+
+    sqlVentasDiarias += `
+      GROUP BY TO_CHAR(m.fecha, 'DD/MM'), DATE(m.fecha)
+      ORDER BY DATE(m.fecha) ASC
+    `;
+
+    const resVentasDiarias = await db.query(sqlVentasDiarias, paramsDiarias);
+
+    // 3. Alertas de stock crítico (alertasStock)
+    let sqlAlertas = `
+      SELECT 
+        st.id,
+        st.cantidad,
+        st.stock_minimo,
+        s.nombre AS sucursal_nombre,
+        CASE 
+          WHEN st.tipo_producto = 'libro' THEN COALESCE(l.titulo, 'Libro')
+          WHEN st.tipo_producto = 'ropa' THEN COALESCE(r.nombre, 'Prenda')
+        END AS nombre_producto
+      FROM stock st
+      LEFT JOIN sucursales s ON st.sucursal_id = s.id
+      LEFT JOIN libros l ON st.tipo_producto = 'libro' AND st.producto_id = l.id
+      LEFT JOIN ropa r ON st.tipo_producto = 'ropa' AND st.producto_id = r.id
+      WHERE st.cantidad <= st.stock_minimo
+    `;
+
+    const paramsAlertas = [];
+    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
+      paramsAlertas.push(parseInt(idSucursal, 10));
+      sqlAlertas += ` AND st.sucursal_id = $1`;
+    }
+
+    sqlAlertas += ` ORDER BY st.cantidad ASC LIMIT 20`;
+
+    const resAlertas = await db.query(sqlAlertas, paramsAlertas);
+
+    // Mapeo exacto con la interfaz de React
     res.json({
-      resumen: resultResumen.rows[0],
-      topProductos: resultTop.rows
+      masVendidos: resMasVendidos.rows,
+      ventasDiarias: resVentasDiarias.rows,
+      alertasStock: resAlertas.rows
     });
   } catch (error) {
     console.error('❌ Error obteniendo estadísticas:', error);
-    res.status(500).json({ error: 'Error al calcular estadísticas' });
+    res.status(500).json({ error: 'Error interno al consultar estadísticas' });
   }
 };
 
