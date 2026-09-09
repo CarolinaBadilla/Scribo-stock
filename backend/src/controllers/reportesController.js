@@ -11,7 +11,7 @@ const obtenerVentas = async (req, res) => {
         m.fecha,
         m.cantidad,
         m.precio_unitario,
-        (m.cantidad * m.precio_unitario * (1 - (m.descuento_porcentaje / 100.0))) AS total,
+        (m.cantidad * m.precio_unitario * (1 - (COALESCE(m.descuento_porcentaje, 0) / 100.0))) AS total,
         s.nombre AS sucursal,
         m.tipo_producto,
         CASE 
@@ -30,17 +30,20 @@ const obtenerVentas = async (req, res) => {
     `;
 
     const params = [];
-    if (sucursalId) {
-      params.push(sucursalId);
+
+    if (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined' && sucursalId !== '') {
+      params.push(parseInt(sucursalId, 10));
       sql += ` AND m.sucursal_id = $${params.length}`;
     }
-    if (fechaInicio) {
-      params.push(fechaInicio);
-      sql += ` AND m.fecha >= $${params.length}`;
+
+    if (fechaInicio && fechaInicio.trim() !== '') {
+      params.push(fechaInicio.trim());
+      sql += ` AND m.fecha::DATE >= $${params.length}::DATE`;
     }
-    if (fechaFin) {
-      params.push(fechaFin);
-      sql += ` AND m.fecha <= $${params.length}`;
+
+    if (fechaFin && fechaFin.trim() !== '') {
+      params.push(fechaFin.trim());
+      sql += ` AND m.fecha::DATE <= $${params.length}::DATE`;
     }
 
     sql += ` ORDER BY m.fecha DESC`;
@@ -78,17 +81,20 @@ const obtenerCompras = async (req, res) => {
     `;
 
     const params = [];
-    if (sucursalId) {
-      params.push(sucursalId);
+
+    if (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined' && sucursalId !== '') {
+      params.push(parseInt(sucursalId, 10));
       sql += ` AND m.sucursal_id = $${params.length}`;
     }
-    if (fechaInicio) {
-      params.push(fechaInicio);
-      sql += ` AND m.fecha >= $${params.length}`;
+
+    if (fechaInicio && fechaInicio.trim() !== '') {
+      params.push(fechaInicio.trim());
+      sql += ` AND m.fecha::DATE >= $${params.length}::DATE`;
     }
-    if (fechaFin) {
-      params.push(fechaFin);
-      sql += ` AND m.fecha <= $${params.length}`;
+
+    if (fechaFin && fechaFin.trim() !== '') {
+      params.push(fechaFin.trim());
+      sql += ` AND m.fecha::DATE <= $${params.length}::DATE`;
     }
 
     sql += ` ORDER BY m.fecha DESC`;
@@ -151,7 +157,6 @@ const obtenerStockActual = async (req, res) => {
   }
 };
 
-// GET /api/reportes/movimientos
 const obtenerMovimientos = async (req, res) => {
   try {
     const { sucursalId, fechaInicio, fechaFin } = req.query;
@@ -173,22 +178,24 @@ const obtenerMovimientos = async (req, res) => {
       LEFT JOIN sucursales s ON m.sucursal_id = s.id
       LEFT JOIN libros l ON m.tipo_producto = 'libro' AND m.producto_id = l.id
       LEFT JOIN ropa r ON m.tipo_producto = 'ropa' AND m.producto_id = r.id
+      WHERE 1=1
     `;
 
     const params = [];
-    if (sucursalId) {
-      params.push(sucursalId);
-      sql += ` WHERE m.sucursal_id = $${params.length}`;
+
+    if (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined' && sucursalId !== '') {
+      params.push(parseInt(sucursalId, 10));
+      sql += ` AND m.sucursal_id = $${params.length}`;
     }
-    if (fechaInicio) {
-      params.push(fechaInicio);
-      sql += params.length === 1 ? ' WHERE' : ' AND';
-      sql += ` m.fecha >= $${params.length}`;
+
+    if (fechaInicio && fechaInicio.trim() !== '') {
+      params.push(fechaInicio.trim());
+      sql += ` AND m.fecha::DATE >= $${params.length}::DATE`;
     }
-    if (fechaFin) {
-      params.push(fechaFin);
-      sql += params.length === 1 ? ' WHERE' : ' AND';
-      sql += ` m.fecha <= $${params.length}`;
+
+    if (fechaFin && fechaFin.trim() !== '') {
+      params.push(fechaFin.trim());
+      sql += ` AND m.fecha::DATE <= $${params.length}::DATE`;
     }
 
     sql += ` ORDER BY m.fecha DESC`;
