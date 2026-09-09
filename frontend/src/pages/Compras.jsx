@@ -30,11 +30,22 @@ export function Compras() {
   };
 
   const handleProductoEncontrado = async (codigo) => {
-    try {
+   try {
       const response = await api.get(`/productos/buscar?codigo=${codigo}&sucursal=${sucursalId}`);
       const productoData = response.data;
-      setProducto({ id: productoData.producto_id, tipo: productoData.tipo_producto, nombre: productoData.nombre_producto, precio_venta: productoData.precio_efectivo });
-      setPrecioCompra(productoData.precio_efectivo * 0.6);
+
+      setProducto({ 
+        id: productoData.producto_id, 
+        tipo: productoData.tipo_producto, 
+        nombre: productoData.nombre_producto, 
+        precio_venta: productoData.precio_efectivo 
+      });
+
+      const precioCompraReal = Number(productoData.precio_compra) > 0 
+        ? Number(productoData.precio_compra) 
+        : Number(productoData.precio_efectivo || 0);
+
+      setPrecioCompra(precioCompraReal);
     } catch (error) {
       if (error.response?.status === 404) alert('Producto no encontrado');
       else console.error('Error:', error);
