@@ -201,6 +201,7 @@ const obtenerMovimientos = async (req, res) => {
   }
 };
 
+// GET /api/estadisticas
 const obtenerEstadisticas = async (req, res) => {
   try {
     const { periodo = '7d', sucursal_id, sucursalId } = req.query;
@@ -211,7 +212,7 @@ const obtenerEstadisticas = async (req, res) => {
     if (periodo === '90d') dias = 90;
     if (periodo === '24h' || periodo === '1d') dias = 1;
 
-    // 1. Productos más vendidos (masVendidos)
+    // 1. Productos más vendidos (Agregados m.tipo_producto, l.titulo y r.nombre al GROUP BY)
     let sqlMasVendidos = `
       SELECT 
         CASE 
@@ -234,14 +235,14 @@ const obtenerEstadisticas = async (req, res) => {
     }
 
     sqlMasVendidos += `
-      GROUP BY nombre
+      GROUP BY m.tipo_producto, l.titulo, r.nombre
       ORDER BY cantidad DESC
       LIMIT 10
     `;
 
     const resMasVendidos = await db.query(sqlMasVendidos, paramsMasVendidos);
 
-    // 2. Tendencia de ventas agrupada por día (ventasDiarias)
+    // 2. Tendencia de ventas agrupada por día
     let sqlVentasDiarias = `
       SELECT 
         TO_CHAR(m.fecha, 'DD/MM') AS fecha,
@@ -264,7 +265,7 @@ const obtenerEstadisticas = async (req, res) => {
 
     const resVentasDiarias = await db.query(sqlVentasDiarias, paramsDiarias);
 
-    // 3. Alertas de stock crítico (alertasStock)
+    // 3. Alertas de stock crítico
     let sqlAlertas = `
       SELECT 
         st.id,
@@ -292,7 +293,6 @@ const obtenerEstadisticas = async (req, res) => {
 
     const resAlertas = await db.query(sqlAlertas, paramsAlertas);
 
-    // Mapeo exacto con la interfaz de React
     res.json({
       masVendidos: resMasVendidos.rows,
       ventasDiarias: resVentasDiarias.rows,
