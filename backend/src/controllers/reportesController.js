@@ -1,6 +1,6 @@
 const db = require('../config/db');
 
-// GET /api/reportes/ventas
+
 const obtenerVentas = async (req, res) => {
   try {
     const { sucursalId, fechaInicio, fechaFin } = req.query;
@@ -15,13 +15,14 @@ const obtenerVentas = async (req, res) => {
         s.nombre AS sucursal,
         m.tipo_producto,
         CASE 
-          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, m.producto_nombre, 'Producto eliminado')
-          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, m.producto_nombre, 'Producto eliminado')
-          ELSE COALESCE(m.producto_nombre, 'Producto eliminado')
-        END AS nombre_producto
+          WHEN m.tipo_producto = 'libro' THEN COALESCE(l.titulo, m.producto_nombre, 'Producto S/D (Baja)')
+          WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.nombre, m.producto_nombre, 'Producto S/D (Baja)')
+          ELSE COALESCE(m.producto_nombre, 'Producto S/D (Baja)')
+        END AS nombre_producto,
         CASE 
           WHEN m.tipo_producto = 'libro' THEN COALESCE(l.autor, '-')
           WHEN m.tipo_producto = 'ropa' THEN COALESCE(r.talle || ' - ' || r.color, '-')
+          ELSE '-'
         END AS detalle_producto
       FROM movimientos m
       LEFT JOIN sucursales s ON m.sucursal_id = s.id
