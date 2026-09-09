@@ -19,8 +19,8 @@ router.post('/registrar', async (req, res) => {
       const insertQuery = `
         INSERT INTO movimientos (
           tipo_producto, producto_id, sucursal_id, tipo_movimiento, 
-          cantidad, precio_unitario, descuento_porcentaje, usuario_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          cantidad, precio_unitario, descuento_porcentaje, usuario_id, producto_nombre
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
 
@@ -32,7 +32,8 @@ router.post('/registrar', async (req, res) => {
         item.cantidad,
         precioUnitario,
         item.descuento || 0,
-        usuarioId
+        usuarioId,
+        item.nombre || item.nombreProducto || null
       ];
 
       const movRes = await client.query(insertQuery, values);

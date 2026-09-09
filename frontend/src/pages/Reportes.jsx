@@ -15,7 +15,6 @@ export function Reportes() {
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
 
-  // 1. Cargar usuario de localStorage al montar
   useEffect(() => {
     const userLocal = localStorage.getItem('user') || localStorage.getItem('usuario');
     if (userLocal) {
@@ -30,9 +29,7 @@ export function Reportes() {
 
   // 2. Cargar datos cuando cambie sucursal o filtros
   useEffect(() => {
-    if (sucursalId) {
-      cargarDatos();
-    }
+    cargarDatos();
   }, [tipoReporte, fechaInicio, fechaFin, sucursalId]);
 
   const esJefe = usuario?.rol === 'jefe' || usuario?.rol === 'DUENO';
@@ -43,7 +40,7 @@ export function Reportes() {
       const data = response.data || [];
       setSucursales(data);
       if (data.length > 0) {
-        setSucursalId(data[0].id);
+        setSucursalId(data[0].id); // Al setear esto, el useEffect de arriba disparará cargarDatos()
       }
     } catch (error) {
       console.error('Error cargando sucursales:', error);
