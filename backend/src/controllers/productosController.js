@@ -9,12 +9,12 @@ const buscarProductoPorCodigo = async (req, res) => {
       return res.status(400).json({ error: 'El código de barras es requerido' });
     }
 
-    const sucursalId = sucursal ? parseInt(sucursal) : 1;
+    const sucursalId = sucursal ? parseInt(sucursal, 10) : 1;
 
     // 1. Buscar en tabla 'libros'
     const libroRes = await db.query(
       'SELECT * FROM libros WHERE codigo_barras = $1 LIMIT 1',
-      [codigo]
+      [codigo.trim()]
     );
 
     if (libroRes.rows.length > 0) {
@@ -31,6 +31,7 @@ const buscarProductoPorCodigo = async (req, res) => {
         tipo_producto: 'libro',
         producto_id: libro.id,
         nombre_producto: libro.titulo,
+        precio_compra: Number(libro.precio_compra) || 0, // 👈 Se agrega precio_compra
         precio_efectivo: Number(libro.precio_efectivo) || 0,
         precio_tarjeta: Number(libro.precio_tarjeta) || Number(libro.precio_efectivo) || 0,
         cantidad: stock ? stock.cantidad : 0,
@@ -43,7 +44,7 @@ const buscarProductoPorCodigo = async (req, res) => {
     // 2. Buscar en tabla 'ropa'
     const ropaRes = await db.query(
       'SELECT * FROM ropa WHERE codigo_barras = $1 LIMIT 1',
-      [codigo]
+      [codigo.trim()]
     );
 
     if (ropaRes.rows.length > 0) {
@@ -60,14 +61,14 @@ const buscarProductoPorCodigo = async (req, res) => {
         tipo_producto: 'ropa',
         producto_id: ropa.id,
         nombre_producto: ropa.nombre,
+        precio_compra: Number(ropa.precio_compra) || 0, // 👈 Parseado numérico correcto
         precio_efectivo: Number(ropa.precio_efectivo) || 0,
         precio_tarjeta: Number(ropa.precio_tarjeta) || Number(ropa.precio_efectivo) || 0,
         cantidad: stock ? stock.cantidad : 0,
         stock_minimo: stock ? stock.stock_minimo : 5,
         colegio: ropa.colegio,
         talle: ropa.talle,
-        color: ropa.color,
-        precio_compra: ropa.precio_compra
+        color: ropa.color
       });
     }
 
@@ -78,7 +79,6 @@ const buscarProductoPorCodigo = async (req, res) => {
   }
 };
 
-// Agregar esta función dentro de src/controllers/productosController.js
 
 const crearProducto = async (req, res) => {
   const tipoNormalizado = req.body.tipo ? req.body.tipo.toString().trim().toLowerCase() : '';
