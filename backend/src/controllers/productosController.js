@@ -13,7 +13,7 @@ const buscarProductoPorCodigo = async (req, res) => {
 
     // 1. Buscar en tabla 'libros'
     const libroRes = await db.query(
-      'SELECT * FROM libros WHERE codigo_barras = $1 LIMIT 1',
+      'SELECT * FROM libros WHERE codigo_barras = $1 AND (activo = TRUE OR activo IS NULL) LIMIT 1',
       [codigo.trim()]
     );
 
@@ -43,7 +43,7 @@ const buscarProductoPorCodigo = async (req, res) => {
 
     // 2. Buscar en tabla 'ropa'
     const ropaRes = await db.query(
-      'SELECT * FROM ropa WHERE codigo_barras = $1 LIMIT 1',
+      'SELECT * FROM ropa WHERE codigo_barras = $1 AND (activo = TRUE OR activo IS NULL) LIMIT 1',
       [codigo.trim()]
     );
 
@@ -224,24 +224,31 @@ const actualizarProducto = async (req, res) => {
   }
 };
 
+// DELETE /api/productos/:tipo/:id
 const eliminarProducto = async (req, res) => {
   const { tipo, id } = req.params;
   const tipoNormalizado = tipo ? tipo.toString().trim().toLowerCase() : '';
   const productoId = parseInt(id, 10);
 
   try {
-    // 1. Primero eliminar referencias en la tabla stock
+    // 1. Eliminamos de la tabla stock para que no ocupe lugar en el inventario activo
     await db.query(
       `DELETE FROM stock WHERE tipo_producto = $1 AND producto_id = $2`,
       [tipoNormalizado, productoId]
     );
 
-    // 2. Eliminar de la tabla correspondiente
+    // 2. En lugar de DELETE, hacemos un borrado lógico (Soft Delete) en la tabla del producto
     let result;
     if (tipoNormalizado === 'libro') {
-      result = await db.query(`DELETE FROM libros WHERE id = $1`, [productoId]);
+      result = await db.query(
+        `UPDATE libros SET activo = FALSE, updated_at = NOW() WHERE id = $1`,
+        [productoId]
+      );
     } else if (tipoNormalizado === 'ropa') {
-      result = await db.query(`DELETE FROM ropa WHERE id = $1`, [productoId]);
+      result = await db.query(
+        `UPDATE ropa SET activo = FALSE, updated_at = NOW() WHERE id = $1`,
+        [productoId]
+      );
     } else {
       return res.status(400).json({ error: 'Tipo de producto inválido' });
     }
@@ -250,13 +257,12 @@ const eliminarProducto = async (req, res) => {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
-    res.json({ mensaje: 'Producto eliminado correctamente' });
+    res.json({ mensaje: 'Producto dado de baja correctamente' });
   } catch (error) {
-    console.error('Error al eliminar producto:', error);
-    res.status(500).json({ error: 'Error al eliminar el producto en la base de datos' });
+    console.error('Error al dar de baja producto:', error);
+    res.status(500).json({ error: 'Error al procesar la baja del producto' });
   }
 };
-
 
 module.exports = {
   buscarProductoPorCodigo,
