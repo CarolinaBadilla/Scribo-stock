@@ -1,4 +1,4 @@
-const { pool } = require('../config/db');
+const db = require('../config/db');
 
 // POST /api/compras/registrar
 const registrarCompra = async (req, res) => {
