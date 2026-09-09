@@ -5,6 +5,7 @@ import api from '../services/api';
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +22,6 @@ export function Login() {
     setLoading(true);
 
     try {
-      // Petición al backend propio
       const response = await api.post('/autenticacion/iniciar-sesion', {
         email,
         clave: password
@@ -32,8 +32,6 @@ export function Login() {
       if (token) {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(usuario));
-
-        // Redirección completa para recargar el AuthContext
         window.location.href = '/ventas';
       }
     } catch (err) {
@@ -47,66 +45,95 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4">
-      <div className="w-full max-w-md bg-[#fefcf8] rounded-2xl shadow-md border border-[#e2d8cc] p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#f5f0e8] px-4 py-12">
+      <div className="w-full max-w-md bg-[#fefcf8] rounded-2xl shadow-xl border border-[#e2d8cc] p-8 md:p-10">
         
-        {/* Logo y Encabezado */}
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-32 h-32 mb-2 flex items-center justify-center">
+        {/* Isologotipo & Encabezado */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          <div className="w-28 h-20 mb-3 flex items-center justify-center">
             <img 
               src="/imagenes/Logo Scribo.png" 
               alt="Scribo Logo" 
               className="w-full h-full object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📚%3C/text%3E%3C/svg%3E';
+              }}
             />
           </div>
-          <h1 className="text-2xl font-bold text-[#5a4a3a] text-center">Scribo Stock</h1>
-          <p className="text-[#8a7a6a] text-sm mt-1 text-center">Sistema de gestión de inventario</p>
+          <h1 className="text-2xl font-black text-[#5a4a3a] tracking-tight text-center">
+            SCRIBO STOCK
+          </h1>
+          <p className="text-[#8a7a6a] text-xs font-bold uppercase tracking-wider mt-1 text-center">
+            Gestión Integral de Inventario
+          </p>
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[#5a4a3a] mb-1">
-              Email / Usuario
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          
+          {/* Input Email */}
+          <div className="mb-5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#5a4a3a] mb-2">
+              Correo Electrónico / Usuario
             </label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-[#e2d8cc] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#c9a87b] focus:border-[#c9a87b] text-sm bg-[#fefcf8] text-[#5a4a3a]"
-              placeholder="usuario@ejemplo.com"
+              className="w-full px-4 py-3 border border-[#e2d8cc] rounded-xl focus:outline-none focus:border-[#5a4a3a] text-sm font-bold text-[#5a4a3a] bg-white placeholder-[#8a7a6a]/60 shadow-xs"
+              placeholder="alina@biopyme.com"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[#5a4a3a] mb-1">
+          {/* Input Contraseña */}
+          <div className="mb-6">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#5a4a3a] mb-2">
               Contraseña
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-[#e2d8cc] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#c9a87b] focus:border-[#c9a87b] text-sm bg-[#fefcf8] text-[#5a4a3a]"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-4 pr-16 py-3 border border-[#e2d8cc] rounded-xl focus:outline-none focus:border-[#5a4a3a] text-sm font-bold text-[#5a4a3a] bg-white placeholder-[#8a7a6a]/60 shadow-xs"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8a7a6a] hover:text-[#5a4a3a] px-2 py-1 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? 'Ocultar' : 'Ver'}
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="p-2.5 bg-rose-50 text-rose-700 rounded-lg text-sm border border-rose-200">
+            <div className="mb-6 p-3 bg-rose-50 text-rose-700 rounded-xl text-xs font-semibold border border-rose-200">
               {error}
             </div>
           )}
 
+          {/* Botón Marrón Corporativo Forzado */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#8c6b42] text-white font-semibold py-2.5 rounded-lg hover:bg-[#6e5333] transition-all duration-200 disabled:opacity-50 text-base shadow-sm"
+            style={{ backgroundColor: '#5a4a3a', color: '#ffffff' }}
+            className="w-full mt-2 font-bold py-3.5 px-4 rounded-xl text-sm shadow-md hover:brightness-110 transition-all cursor-pointer border border-[#43372b]"
           >
-            {loading ? 'Ingresando...' : 'Iniciar sesión'}
+            {loading ? 'Ingresando...' : 'Ingresar al Sistema →'}
           </button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-[#e2d8cc]/60 text-center">
+          <p className="text-[11px] font-medium text-[#8a7a6a]">
+            Scribo Gestión © {new Date().getFullYear()} — Acceso Restringido
+          </p>
+        </div>
 
       </div>
     </div>

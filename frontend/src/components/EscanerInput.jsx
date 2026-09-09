@@ -1,51 +1,47 @@
+// src/components/EscanerInput.jsx
 import { useState, useRef, useEffect } from 'react';
 
-export function EscanerInput({ onProductoEncontrado, placeholder, autoFocus = true }) {
+export function EscanerInput({ onProductoEncontrado, placeholder = "Escanea el código de barras o escríbelo..." }) {
   const [codigo, setCodigo] = useState('');
-  const [buscando, setBuscando] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [autoFocus]);
+  }, []);
 
-  const handleKeyDown = async (e) => {
-    if (e.key === 'Enter' && codigo.trim()) {
-      setBuscando(true);
-      try {
-        await onProductoEncontrado(codigo);
-        setCodigo('');
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setBuscando(false);
-        inputRef.current?.focus();
-      }
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!codigo.trim()) return;
+    onProductoEncontrado(codigo.trim());
+    setCodigo('');
   };
 
   return (
-    <div className="bg-yellow-100 p-6 rounded-lg">
-      <label className="block text-lg font-bold mb-2">
-        📷 Escanea el código de barras:
-      </label>
-      <input
-        ref={inputRef}
-        type="text"
-        value={codigo}
-        onChange={(e) => setCodigo(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder || "Acerca el producto al escáner..."}
-        className="w-full p-4 text-2xl border-2 rounded font-mono"
-        disabled={buscando}
-        autoFocus={autoFocus}
-      />
-      {buscando && <p className="mt-2 text-blue-500">Buscando producto...</p>}
-      <p className="text-sm text-gray-600 mt-2">
-        💡 El escáner escribe el código y presiona Enter automáticamente
+    <form onSubmit={handleSubmit} className="w-full space-y-2">
+      <div className="relative flex items-center">
+        <input
+          ref={inputRef}
+          type="text"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 bg-white border border-[#e2d8cc] rounded-xl text-sm font-bold text-[#5a4a3a] placeholder-[#8a7a6a]/60 focus:outline-none focus:border-[#5a4a3a] shadow-xs"
+        />
+        <button
+          type="submit"
+          style={{ backgroundColor: '#5a4a3a', color: '#ffffff' }}
+          className="absolute right-2 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-xs hover:bg-[#43372b] cursor-pointer"
+        >
+          Buscar ↵
+        </button>
+      </div>
+
+      <p className="text-xs font-semibold text-[#8a7a6a] flex items-center gap-1.5 px-0.5 pt-0.5">
+        <span>💡</span>
+        <span>El escáner ingresa el código y presiona Enter automáticamente.</span>
       </p>
-    </div>
+    </form>
   );
 }

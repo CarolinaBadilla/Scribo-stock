@@ -138,144 +138,172 @@ export function Ventas() {
   };
 
   if (loading) {
-    return <div className="text-center py-10">Cargando...</div>;
+    return <div className="text-center py-10 font-bold text-base text-[#8a7a6a]">Cargando Punto de Venta...</div>;
   }
 
   return (
-    <div className="w-full">
-      <div className="w-full">
-        {/* Título con más espacio inferior */}
-        <h1 className="text-3xl md:text-4xl font-bold mb-10">🛒 Punto de Venta</h1>
+    <div className="w-full space-y-4">
+      
+      {/* Encabezado Panorámico */}
+      <div className="flex items-center justify-between bg-[#fefcf8] px-6 py-4 rounded-2xl border border-[#e2d8cc] shadow-xs">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-black text-[#5a4a3a] tracking-tight">
+            🛒 Punto de Venta
+          </h1>
+          <span className="text-sm font-bold text-[#8a7a6a] hidden md:inline">
+            — Emisión de tickets e ingreso rápido de mercadería
+          </span>
+        </div>
         
-        {/* Selector de sucursal - más padding y margen */}
-        <div className="mb-10 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-          <label className="font-bold text-lg mr-4">📍 Sucursal:</label>
+        <div className="flex items-center gap-3 bg-[#f5f0e8] px-4 py-2 rounded-xl border border-[#e2d8cc]">
+          <span className="font-bold text-xs uppercase tracking-wider text-[#5a4a3a]">📍 Sucursal:</span>
           <select
             value={sucursalId || ''}
             onChange={(e) => setSucursalId(parseInt(e.target.value))}
-            className="p-3 border rounded-xl text-base"
+            className="bg-transparent font-bold text-base text-[#5a4a3a] focus:outline-none cursor-pointer"
           >
             {sucursales.map(suc => (
               <option key={suc.id} value={suc.id}>{suc.nombre}</option>
             ))}
           </select>
         </div>
+      </div>
+      
+      {/* Grilla Principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
         
-        {/* Grid con más espacio entre columnas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
+        {/* Columna Izquierda */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
           
-          {/* Columna izquierda */}
-          <div className="space-y-8">
-            {/* Escáner */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
-              <EscanerInput 
-                onProductoEncontrado={handleProductoEncontrado} 
-                placeholder="Escanea el código de barras..."
-              />
-            </div>
-            
-            {/* Método de pago */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
-              <h2 className="text-xl font-bold mb-6">💳 Método de pago</h2>
-              <div className="flex gap-6">
-                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 flex-1">
-                  <input
-                    type="radio"
-                    value="efectivo"
-                    checked={tipoPago === 'efectivo'}
-                    onChange={() => setTipoPago('efectivo')}
-                    className="w-5 h-5"
-                  />
-                  <span className="font-medium text-lg">💰 Efectivo</span>
-                </label>
-                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 flex-1">
-                  <input
-                    type="radio"
-                    value="tarjeta"
-                    checked={tipoPago === 'tarjeta'}
-                    onChange={() => setTipoPago('tarjeta')}
-                    className="w-5 h-5"
-                  />
-                  <span className="font-medium text-lg">💳 Tarjeta</span>
-                </label>
-              </div>
-            </div>
+          {/* Lectura de Código (Sin flex-1 para que se ajuste exactamente al contenido) */}
+          <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-5 shadow-xs">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#8a7a6a] mb-2.5">
+              Ingreso de Productos
+            </h2>
+            <EscanerInput 
+              onProductoEncontrado={handleProductoEncontrado} 
+              placeholder="Escanea el código de barras o escríbelo..."
+            />
           </div>
           
-          {/* Columna derecha - Carrito */}
-          <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8">
-            <h2 className="text-2xl font-bold mb-6 text-center">🛍️ Carrito</h2>
-            
-            {carrito.length === 0 ? (
-              <div className="text-center py-16 text-gray-500">
-                <p className="text-6xl mb-4">🛒</p>
-                <p className="text-xl">No hay productos en el carrito</p>
-                <p className="text-base mt-3">Escanea un código para comenzar</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-4 max-h-96 overflow-y-auto mb-6 pr-2">
-                  {carrito.map((item, index) => (
-                    <div key={index} className="border rounded-xl p-5">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <p className="font-bold text-lg">{item.nombre}</p>
-                          <p className="text-base text-gray-600 mt-1">
-                            {formatMoney(tipoPago === 'efectivo' ? item.precioEfectivo : item.precioTarjeta)} c/u
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => eliminarItem(index)}
-                          className="text-red-500 hover:text-red-700 text-xl"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="flex gap-6 mt-3">
-                        <div className="flex items-center gap-3">
-                          <label className="text-base font-medium">Cantidad:</label>
-                          <input
-                            type="number"
-                            value={item.cantidad}
-                            onChange={(e) => actualizarCantidad(index, parseInt(e.target.value))}
-                            className="w-20 p-2 border rounded-lg text-center text-base"
-                            min="1"
-                            max={item.stockDisponible}
-                          />
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="text-base font-medium">Descuento:</label>
-                          <input
-                            type="number"
-                            value={item.descuento}
-                            onChange={(e) => actualizarDescuento(index, parseInt(e.target.value))}
-                            className="w-20 p-2 border rounded-lg text-center text-base"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-base">%</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="border-t pt-6 space-y-5">
-                  <div className="flex justify-between text-2xl font-bold">
-                    <span>Total:</span>
-                    <span className="text-blue-600">{formatMoney(calcularTotal())}</span>
-                  </div>
-                  <button
-                    onClick={handleFinalizarVenta}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all"
-                  >
-                    ✅ Finalizar venta
-                  </button>
-                </div>
-              </>
-            )}
+          {/* Forma de Pago */}
+          <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-5 shadow-xs">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#8a7a6a] mb-2.5">
+              Método de Pago
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                type="button"
+                onClick={() => setTipoPago('efectivo')}
+                style={{ 
+                  backgroundColor: tipoPago === 'efectivo' ? '#5a4a3a' : '#ffffff',
+                  color: tipoPago === 'efectivo' ? '#ffffff' : '#5a4a3a',
+                  borderColor: tipoPago === 'efectivo' ? '#43372b' : '#e2d8cc'
+                }}
+                className="flex items-center justify-center gap-2 py-3 px-4 border rounded-xl transition-all text-sm font-bold shadow-xs cursor-pointer"
+              >
+                <span>💰 Efectivo</span>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setTipoPago('tarjeta')}
+                style={{ 
+                  backgroundColor: tipoPago === 'tarjeta' ? '#5a4a3a' : '#ffffff',
+                  color: tipoPago === 'tarjeta' ? '#ffffff' : '#5a4a3a',
+                  borderColor: tipoPago === 'tarjeta' ? '#43372b' : '#e2d8cc'
+                }}
+                className="flex items-center justify-center gap-2 py-3 px-4 border rounded-xl transition-all text-sm font-bold shadow-xs cursor-pointer"
+              >
+                <span>💳 Tarjeta</span>
+              </button>
+            </div>
           </div>
         </div>
+        
+        {/* Columna Derecha: Carrito */}
+        <div className="lg:col-span-7 bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-6 shadow-xs flex flex-col justify-between min-h-[340px]">
+          <div>
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#e2d8cc]/60 mb-4">
+              <h2 className="text-sm font-bold text-[#5a4a3a] uppercase tracking-wider">🛍️ Carrito de Compra</h2>
+              <span className="text-xs font-bold text-[#8a7a6a] bg-[#f5f0e8] px-3 py-1 rounded-lg border border-[#e2d8cc]">
+                {carrito.length} {carrito.length === 1 ? 'ítem' : 'ítems'}
+              </span>
+            </div>
+            
+            {carrito.length === 0 ? (
+              <div className="text-center py-12 text-[#8a7a6a]">
+                <p className="text-4xl mb-2">🛒</p>
+                <p className="text-base font-bold text-[#5a4a3a]">El carrito está vacío</p>
+                <p className="text-xs mt-1">Escanea un código de barras para comenzar la venta</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+                {carrito.map((item, index) => (
+                  <div key={index} className="bg-[#f5f0e8]/50 border border-[#e2d8cc] rounded-xl p-3 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-base text-[#5a4a3a] truncate">{item.nombre}</p>
+                      <p className="text-xs font-semibold text-[#8a7a6a]">
+                        {formatMoney(tipoPago === 'efectivo' ? item.precioEfectivo : item.precioTarjeta)} c/u
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#8a7a6a]">Cant:</label>
+                        <input
+                          type="number"
+                          value={item.cantidad}
+                          onChange={(e) => actualizarCantidad(index, parseInt(e.target.value) || 1)}
+                          className="w-14 p-1 border border-[#e2d8cc] rounded-lg text-center text-sm font-bold bg-white text-[#5a4a3a]"
+                          min="1"
+                          max={item.stockDisponible}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#8a7a6a]">Desc:</label>
+                        <input
+                          type="number"
+                          value={item.descuento}
+                          onChange={(e) => actualizarDescuento(index, parseInt(e.target.value) || 0)}
+                          className="w-14 p-1 border border-[#e2d8cc] rounded-lg text-center text-sm font-bold bg-white text-[#5a4a3a]"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="text-xs font-bold text-[#8a7a6a]">%</span>
+                      </div>
+
+                      <button
+                        onClick={() => eliminarItem(index)}
+                        className="text-rose-600 hover:text-rose-800 text-xs font-bold bg-white border border-rose-200 px-2 py-1 rounded-lg cursor-pointer ml-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Pie del Carrito */}
+          {carrito.length > 0 && (
+            <div className="border-t border-[#e2d8cc] pt-4 mt-4 flex items-center justify-between gap-6">
+              <div className="text-xl font-black text-[#5a4a3a]">
+                Total: <span className="text-[#5a4a3a]">{formatMoney(calcularTotal())}</span>
+              </div>
+              <button
+                onClick={handleFinalizarVenta}
+                style={{ backgroundColor: '#5a4a3a', color: '#ffffff' }}
+                className="font-bold py-3 px-8 rounded-xl text-sm shadow-md hover:bg-[#43372b] transition-all cursor-pointer border border-[#43372b]"
+              >
+                ✅ Finalizar Venta ({formatMoney(calcularTotal())})
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
