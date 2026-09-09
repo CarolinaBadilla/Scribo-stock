@@ -1,14 +1,15 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 
-// POST /api/compras/registrar
 const registrarCompra = async (req, res) => {
-  const client = await db.connect(); // 👈 Uso directo de db.connect()
+  let client;
 
   try {
+    client = await pool.connect();
+
     const { sucursalId, items, usuarioId } = req.body;
     const movimientos = [];
 
-    await client.query('BEGIN');
+    await client.query('BEGIN'); // Iniciar transacción SQL
 
     for (const item of items) {
       const tipo = item.tipoProducto ? item.tipoProducto.toString().trim().toLowerCase() : '';
@@ -37,14 +38,14 @@ const registrarCompra = async (req, res) => {
       const movRes = await client.query(insertMovimientoSql, valuesMov);
       movimientos.push(movRes.rows[0]);
 
-      // 2. Actualizar precio de compra del producto al costo más reciente
+      // 2. Actualizar precio_compra en la tabla del producto
       if (tipo === 'libro') {
         await client.query(`UPDATE libros SET precio_compra = $1, updated_at = NOW() WHERE id = $2`, [precioCompra, prodId]);
       } else if (tipo === 'ropa') {
         await client.query(`UPDATE ropa SET precio_compra = $1, updated_at = NOW() WHERE id = $2`, [precioCompra, prodId]);
       }
 
-      // 3. Aumentar stock de forma atómica
+      // 3. Incrementar stock de forma atómica
       const updateStockSql = `
         INSERT INTO stock (tipo_producto, producto_id, sucursal_id, cantidad, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
@@ -62,7 +63,7 @@ const registrarCompra = async (req, res) => {
       ]);
     }
 
-    await client.query('COMMIT');
+    await client.query('COMMIT'); // Confirmar cambios
 
     res.json({
       success: true,
@@ -70,11 +71,11 @@ const registrarCompra = async (req, res) => {
       movimientos
     });
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK'); // Deshacer si falla
     console.error('❌ Error registrando compra:', error);
     res.status(500).json({ error: error.message });
   } finally {
-    client.release();
+    if (client) client.release(); // Liberar cliente al pool
   }
 };
 
