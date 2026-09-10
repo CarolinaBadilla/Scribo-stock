@@ -86,7 +86,6 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
-//app.use('/api/estadisticas', reportesRoutes);
 app.get('/api/estadisticas', reportesController.obtenerEstadisticas);
 
 // 6. Rutas de diagnóstico

@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const productosController = require('../controllers/productosController');
 
-const { verificarToken, permitirRoles } = require('../middlewares/auth');
+const { verificarToken, permitirRoles } = require('../middleware/auth');
+//backend\src\middleware
+//backend\src\routes\productos.js
 
 router.get('/buscar', verificarToken, productosController.buscarProductoPorCodigo);
 router.post('/', verificarToken, permitirRoles('jefe', 'DUENO'), productosController.crearProducto);
