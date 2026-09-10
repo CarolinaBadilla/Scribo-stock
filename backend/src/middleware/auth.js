@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware para verificar token activo
 const verificarToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Formato: Bearer TOKEN
@@ -9,19 +8,21 @@ const verificarToken = (req, res, next) => {
     return res.status(401).json({ error: 'Acceso denegado: Token no proporcionado' });
   }
 
+  // 🔒 SEGURIDAD: Exigir que exista la variable de entorno
+  if (!process.env.JWT_SECRET) {
+    console.error('CRÍTICO: JWT_SECRET no está definida en las variables de entorno');
+    return res.status(500).json({ error: 'Error interno de configuración de seguridad' });
+  }
+
   try {
-    const usuarioDecodificado = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'secreto_super_seguro_scribo_2026'
-    );
-    req.usuario = usuarioDecodificado; // Guardamos los datos del usuario en la request
+    const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET);
+    req.usuario = usuarioDecodificado; // Guardamos datos del usuario en la request
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Token inválido o expirado' });
   }
 };
 
-// Middleware para restringir accesos por Rol
 const permitirRoles = (...rolesPermitidos) => {
   return (req, res, next) => {
     if (!req.usuario) {
@@ -29,7 +30,12 @@ const permitirRoles = (...rolesPermitidos) => {
     }
 
     const rolUsuario = req.usuario.rol;
-    if (!rolesPermitidos.includes(rolUsuario)) {
+    
+    // Normalizamos la comparación por si vienen diferencias de mayúsculas/minúsculas
+    const rolesNormalizados = rolesPermitidos.map(r => r.toLowerCase());
+    const rolUsuarioNormalizado = rolUsuario ? rolUsuario.toString().toLowerCase() : '';
+
+    if (!rolesNormalizados.includes(rolUsuarioNormalizado)) {
       return res.status(403).json({ 
         error: 'Acceso denegado: No tienes los permisos necesarios para esta acción' 
       });
