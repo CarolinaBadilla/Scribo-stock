@@ -15,4 +15,4 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: /var/www/app/deploy.sh
+          script: /home/debian/scribo_stock/scripts/deploy.sh
