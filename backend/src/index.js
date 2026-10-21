@@ -52,7 +52,6 @@ const corsOptions = {
 
 // Habilitar CORS globalmente y responder a peticiones de preflight (OPTIONS)
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,

@@ -1,6 +1,5 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_scribo_2026';
 
