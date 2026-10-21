@@ -79,7 +79,16 @@ const reportesRoutes = require('./routes/reportes');
 const autenticacionRoutes = require('./routes/autenticacion');
 const reportesController = require('./controllers/reportesController');
 
+// 6. Rutas públicas
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
 app.use('/api/autenticacion', autenticacionRoutes);
+
+// 7. Todo lo que sigue exige token
+const { verificarToken } = require('./middleware/auth');
+app.use('/api', verificarToken);
+
 app.use('/api/sucursales', sucursalesRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/productos', productosRoutes);
@@ -88,10 +97,6 @@ app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.get('/api/estadisticas', reportesController.obtenerEstadisticas);
 
-// 6. Rutas de diagnóstico
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Backend funcionando con PostgreSQL', cors: 'habilitado' });
-});
 
 app.get('/', (req, res) => {
   res.json({ message: 'API de Librería Stock funcionando correctamente' });

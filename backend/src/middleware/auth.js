@@ -14,13 +14,15 @@ const verificarToken = (req, res, next) => {
     return res.status(500).json({ error: 'Error interno de configuración de seguridad' });
   }
 
-  try {
-    const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = usuarioDecodificado; // Guardamos datos del usuario en la request
-    next();
-  } catch (error) {
-    return res.status(403).json({ error: 'Token inválido o expirado' });
-  }
+    try {
+      const usuarioDecodificado = jwt.verify(token, process.env.JWT_SECRET, {
+        algorithms: ['HS256'],
+      });
+      req.usuario = usuarioDecodificado;
+      next();
+    } catch (error) {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
 };
 
 const permitirRoles = (...rolesPermitidos) => {
