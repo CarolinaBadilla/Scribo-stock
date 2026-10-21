@@ -25,24 +25,37 @@ app.use(
   })
 );
 
-// Orígenes exactos permitidos (Producción y Entorno Local)
+// 1. Orígenes permitidos dinámicos según el entorno
 const allowedOrigins = [
   'https://scribo.com.ar',
-  'https://www.scribo.com.ar',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:8082'
+  'https://www.scribo.com.ar'
 ];
+
+// Solo agregamos localhost si estamos en desarrollo local
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173');
+}
+
+// Si configuraste una variable FRONTEND_URL en .env, la sumamos a la lista
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (ej: curl, Postman o llamadas internas) o listadas
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('⚠️ Origen no listado pero permitido por fallback:', origin);
-      callback(null, true);
+    // Permitir herramientas como curl/Postman o llamadas server-to-server (sin header Origin)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // Comprobar si el origen exacto está en la lista blanca
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // 🔒 Bloquear explícitamente cualquier otro origen
+    console.warn(`⛔ Intento de acceso bloqueado por CORS desde el origen: ${origin}`);
+    return callback(new Error('Acceso no permitido por la política CORS del servidor'), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -50,7 +63,6 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-// Habilitar CORS globalmente y responder a peticiones de preflight (OPTIONS)
 app.use(cors(corsOptions));
 
 const limiter = rateLimit({
