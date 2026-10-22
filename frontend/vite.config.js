@@ -25,14 +25,25 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false, // 🔒 Oculta el código fuente original en producción
-    minify: 'esbuild', // Minificación eficiente de código
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separa librerías pesadas en un chunk independiente para mejor rendimiento y caché
-          vendor: ['react', 'react-dom', 'react-router-dom', 'axios'],
-          charts: ['recharts']
+        // En Vite 8 / Rolldown debe ser una función
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts')) {
+              return 'charts';
+            }
+            if (
+              id.includes('react') ||
+              id.includes('react-dom') ||
+              id.includes('react-router-dom') ||
+              id.includes('axios')
+            ) {
+              return 'vendor';
+            }
+          }
         }
       }
     }
