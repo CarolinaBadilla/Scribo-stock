@@ -25,11 +25,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
-    minify: 'esbuild',
+    sourcemap: false, // 🔒 Oculta el código fuente original en producción
+    // Eliminamos minify: 'esbuild' para que use el motor nativo de Vite 8 sin depender de esbuild
     rollupOptions: {
       output: {
-        // En Vite 8 / Rolldown debe ser una función
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('recharts')) {
