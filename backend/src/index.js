@@ -113,6 +113,23 @@ app.get('/', (req, res) => {
   res.json({ message: 'API de Librería Stock funcionando correctamente' });
 });
 
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
+
+// Middleware Global de Errores: captura cualquier fallo no controlado
+app.use((err, req, res, next) => {
+  // Registra el error completo en el log privado del servidor
+  console.error('❌ Error no controlado detectado:', err);
+
+  // Respuesta genérica y limpia hacia el cliente
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production' 
+      ? 'Ocurrió un error interno en el servidor' 
+      : err.message
+  });
+});
+
 server.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🔌 WebSocket habilitado`);

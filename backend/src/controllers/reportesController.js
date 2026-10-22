@@ -216,14 +216,28 @@ const obtenerMovimientos = async (req, res) => {
 const obtenerEstadisticas = async (req, res) => {
   try {
     const { periodo = '7d', sucursal_id, sucursalId } = req.query;
-    const idSucursal = sucursal_id || sucursalId;
+    const sucursalRaw = sucursal_id || sucursalId;
 
-    let dias = 7;
-    if (periodo === '30d') dias = 30;
-    if (periodo === '90d') dias = 90;
-    if (periodo === '24h' || periodo === '1d') dias = 1;
+    // 🔒 1. Whitelist estricta para el período (previene entradas arbitrarias)
+    const periodosValidos = {
+      '24h': 1,
+      '1d': 1,
+      '7d': 7,
+      '30d': 30,
+      '90d': 90
+    };
+    const dias = periodosValidos[periodo] || 7;
 
-    // 1. Productos más vendidos (Agregados m.tipo_producto, l.titulo y r.nombre al GROUP BY)
+    // 🔒 2. Sanitización estricta de la sucursal
+    let idSucursal = null;
+    if (sucursalRaw && sucursalRaw !== 'null' && sucursalRaw !== 'undefined') {
+      const parsedId = parseInt(sucursalRaw, 10);
+      if (!isNaN(parsedId) && parsedId > 0) {
+        idSucursal = parsedId;
+      }
+    }
+
+    // --- Query 1: Productos más vendidos ---
     let sqlMasVendidos = `
       SELECT 
         CASE 
@@ -236,13 +250,13 @@ const obtenerEstadisticas = async (req, res) => {
       LEFT JOIN libros l ON m.tipo_producto = 'libro' AND m.producto_id = l.id
       LEFT JOIN ropa r ON m.tipo_producto = 'ropa' AND m.producto_id = r.id
       WHERE m.tipo_movimiento = 'venta'
-        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
+        AND m.fecha >= NOW() - ($1 * INTERVAL '1 day')
     `;
 
     const paramsMasVendidos = [dias];
-    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
-      paramsMasVendidos.push(parseInt(idSucursal, 10));
-      sqlMasVendidos += ` AND m.sucursal_id = $2`;
+    if (idSucursal) {
+      paramsMasVendidos.push(idSucursal);
+      sqlMasVendidos += ` AND m.sucursal_id = $${paramsMasVendidos.length}`;
     }
 
     sqlMasVendidos += `
@@ -253,20 +267,20 @@ const obtenerEstadisticas = async (req, res) => {
 
     const resMasVendidos = await db.query(sqlMasVendidos, paramsMasVendidos);
 
-    // 2. Tendencia de ventas agrupada por día
+    // --- Query 2: Tendencia de ventas diaria ---
     let sqlVentasDiarias = `
       SELECT 
         TO_CHAR(m.fecha, 'DD/MM') AS fecha,
         SUM(m.cantidad * m.precio_unitario * (1 - (COALESCE(m.descuento_porcentaje, 0) / 100.0)))::NUMERIC(10,2) AS total
       FROM movimientos m
       WHERE m.tipo_movimiento = 'venta'
-        AND m.fecha >= NOW() - ($1 || ' days')::INTERVAL
+        AND m.fecha >= NOW() - ($1 * INTERVAL '1 day')
     `;
 
     const paramsDiarias = [dias];
-    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
-      paramsDiarias.push(parseInt(idSucursal, 10));
-      sqlVentasDiarias += ` AND m.sucursal_id = $2`;
+    if (idSucursal) {
+      paramsDiarias.push(idSucursal);
+      sqlVentasDiarias += ` AND m.sucursal_id = $${paramsDiarias.length}`;
     }
 
     sqlVentasDiarias += `
@@ -276,7 +290,7 @@ const obtenerEstadisticas = async (req, res) => {
 
     const resVentasDiarias = await db.query(sqlVentasDiarias, paramsDiarias);
 
-    // 3. Alertas de stock crítico
+    // --- Query 3: Alertas de stock crítico ---
     let sqlAlertas = `
       SELECT 
         st.id,
@@ -295,23 +309,23 @@ const obtenerEstadisticas = async (req, res) => {
     `;
 
     const paramsAlertas = [];
-    if (idSucursal && idSucursal !== 'null' && idSucursal !== 'undefined') {
-      paramsAlertas.push(parseInt(idSucursal, 10));
-      sqlAlertas += ` AND st.sucursal_id = $1`;
+    if (idSucursal) {
+      paramsAlertas.push(idSucursal);
+      sqlAlertas += ` AND st.sucursal_id = $${paramsAlertas.length}`;
     }
 
     sqlAlertas += ` ORDER BY st.cantidad ASC LIMIT 20`;
 
     const resAlertas = await db.query(sqlAlertas, paramsAlertas);
 
-    res.json({
+    return res.json({
       masVendidos: resMasVendidos.rows,
       ventasDiarias: resVentasDiarias.rows,
       alertasStock: resAlertas.rows
     });
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
-    res.status(500).json({ error: 'Error interno al consultar estadísticas' });
+    console.error('❌ Error obteniendo estadísticas:', error.message);
+    return res.status(500).json({ error: 'Error interno al consultar estadísticas' });
   }
 };
 
