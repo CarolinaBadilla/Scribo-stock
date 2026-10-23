@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const stockController = require('../controllers/stockController');
 const { verificarToken } = require('../middleware/auth');
+const { restringirSucursal } = require('../middleware/sucursales');
 
 router.use(verificarToken);
 
