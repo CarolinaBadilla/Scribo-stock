@@ -1,81 +1,103 @@
 const db = require('../config/db');
 
-// GET /api/productos/buscar?codigo=XXX&sucursal=1
+// backend/src/controllers/productosController.js
+
 const buscarProductoPorCodigo = async (req, res) => {
   try {
     const { codigo, sucursal } = req.query;
+    // Lee 'sucursal' o 'sucursalId' y fallback a la sucursal del token
+    const sucursalId = sucursal || req.query.sucursalId || req.usuario?.sucursalId;
 
     if (!codigo) {
-      return res.status(400).json({ error: 'El código de barras es requerido' });
+      return res.status(400).json({ error: 'Debe ingresar un código de producto' });
     }
 
-    const sucursalId = sucursal ? parseInt(sucursal, 10) : 1;
-
-    // 1. Buscar en tabla 'libros'
-    const libroRes = await db.query(
-      'SELECT * FROM libros WHERE codigo_barras = $1 AND (activo = TRUE OR activo IS NULL) LIMIT 1',
-      [codigo.trim()]
-    );
-
-    if (libroRes.rows.length > 0) {
-      const libro = libroRes.rows[0];
-
-      const stockRes = await db.query(
-        'SELECT cantidad, stock_minimo FROM stock WHERE tipo_producto = $1 AND producto_id = $2 AND sucursal_id = $3 LIMIT 1',
-        ['libro', libro.id, sucursalId]
-      );
-
-      const stock = stockRes.rows[0];
-
-      return res.json({
-        tipo_producto: 'libro',
-        producto_id: libro.id,
-        nombre_producto: libro.titulo,
-        precio_compra: Number(libro.precio_compra) || 0, // 👈 Se agrega precio_compra
-        precio_efectivo: Number(libro.precio_efectivo) || 0,
-        precio_tarjeta: Number(libro.precio_tarjeta) || Number(libro.precio_efectivo) || 0,
-        cantidad: stock ? stock.cantidad : 0,
-        stock_minimo: stock ? stock.stock_minimo : 5,
-        autor: libro.autor,
-        editorial: libro.editorial
-      });
+    if (!sucursalId) {
+      return res.status(400).json({ error: 'Debe especificar una sucursal' });
     }
 
-    // 2. Buscar en tabla 'ropa'
-    const ropaRes = await db.query(
-      'SELECT * FROM ropa WHERE codigo_barras = $1 AND (activo = TRUE OR activo IS NULL) LIMIT 1',
-      [codigo.trim()]
-    );
+    const codigoSanitizado = String(codigo).trim();
 
-    if (ropaRes.rows.length > 0) {
-      const ropa = ropaRes.rows[0];
+    // 1. Intentar buscar en libros vinculando directamente con el stock de esa sucursal
+    const queryLibro = `
+      SELECT 
+        l.id AS producto_id,
+        l.titulo AS nombre_producto,
+        l.precio_compra,
+        l.precio_efectivo,
+        l.precio_tarjeta,
+        l.autor,
+        l.editorial,
+        COALESCE(s.cantidad, 0) AS cantidad,
+        COALESCE(s.stock_minimo, 0) AS stock_minimo,
+        'libro' AS tipo_producto
+      FROM libros l
+      JOIN stock s ON s.producto_id = l.id 
+                   AND s.tipo_producto = 'libro' 
+                   AND s.sucursal_id = $1
+      WHERE TRIM(l.codigo_barras) = $2
+      LIMIT 1
+    `;
 
-      const stockRes = await db.query(
-        'SELECT cantidad, stock_minimo FROM stock WHERE tipo_producto = $1 AND producto_id = $2 AND sucursal_id = $3 LIMIT 1',
-        ['ropa', ropa.id, sucursalId]
-      );
+    let result = await db.query(queryLibro, [Number(sucursalId), codigoSanitizado]);
 
-      const stock = stockRes.rows[0];
-
-      return res.json({
-        tipo_producto: 'ropa',
-        producto_id: ropa.id,
-        nombre_producto: ropa.nombre,
-        precio_compra: Number(ropa.precio_compra) || 0, // 👈 Parseado numérico correcto
-        precio_efectivo: Number(ropa.precio_efectivo) || 0,
-        precio_tarjeta: Number(ropa.precio_tarjeta) || Number(ropa.precio_efectivo) || 0,
-        cantidad: stock ? stock.cantidad : 0,
-        stock_minimo: stock ? stock.stock_minimo : 5,
-        colegio: ropa.colegio,
-        talle: ropa.talle,
-        color: ropa.color
-      });
+    // 2. Si no es libro, intentar buscar en ropa (o productos generales)
+    if (result.rows.length === 0) {
+      const queryRopa = `
+        SELECT 
+          r.id AS producto_id,
+          r.nombre AS nombre_producto,
+          r.precio_compra,
+          r.precio_efectivo,
+          r.precio_tarjeta,
+          COALESCE(s.cantidad, 0) AS cantidad,
+          COALESCE(s.stock_minimo, 0) AS stock_minimo,
+          'ropa' AS tipo_producto
+        FROM ropa r
+        JOIN stock s ON s.producto_id = r.id 
+                     AND s.tipo_producto = 'ropa' 
+                     AND s.sucursal_id = $1
+        WHERE TRIM(r.codigo) = $2 OR TRIM(r.codigo_barras) = $2
+        LIMIT 1
+      `;
+      result = await db.query(queryRopa, [Number(sucursalId), codigoSanitizado]);
     }
 
-    return res.status(404).json({ error: 'Producto no encontrado' });
+    // 3. Fallback: si no tiene registro de stock aún en esa sucursal, buscarlo en el catálogo general
+    if (result.rows.length === 0) {
+      const queryCatalogo = `
+        SELECT 
+          l.id AS producto_id,
+          l.titulo AS nombre_producto,
+          l.precio_compra,
+          l.precio_efectivo,
+          l.precio_tarjeta,
+          0 AS cantidad,
+          0 AS stock_minimo,
+          'libro' AS tipo_producto
+        FROM libros l
+        WHERE TRIM(l.codigo_barras) = $1
+        LIMIT 1
+      `;
+      result = await db.query(queryCatalogo, [codigoSanitizado]);
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    const producto = result.rows[0];
+
+    // Ocultar precio_compra si el usuario no es jefe ni dueño
+    if (req.usuario?.rol !== 'jefe' && req.usuario?.rol !== 'DUENO') {
+      delete producto.precio_compra;
+    }
+
+    return res.json(producto);
+
   } catch (error) {
-    console.error('❌ Error en búsqueda de producto:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error al buscar producto:', error);
+    return res.status(500).json({ error: 'Error interno al buscar producto' });
   }
 };
 

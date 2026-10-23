@@ -19,7 +19,13 @@ export function Ventas() {
     try {
       const response = await api.get('/sucursales');
       setSucursales(response.data);
-      if (response.data.length > 0) {
+
+      const user = JSON.parse(localStorage.getItem('usuario') || localStorage.getItem('user') || '{}');
+
+      // Si el usuario tiene una sucursal asignada (operador), usar esa obligatoriamente
+      if (user.sucursalId) {
+        setSucursalId(Number(user.sucursalId));
+      } else if (response.data.length > 0) {
         setSucursalId(response.data[0].id);
       }
       setLoading(false);
@@ -31,20 +37,26 @@ export function Ventas() {
 
   const handleProductoEncontrado = async (codigo) => {
     try {
-      const response = await api.get(`/productos/buscar?codigo=${codigo}&sucursal=${sucursalId}`);
+      const response = await api.get(`/productos/buscar?codigo=${encodeURIComponent(codigo)}&sucursal=${sucursalId}`);
       const producto = response.data;
-      
-      if (producto.cantidad <= 0) {
-        toast.error(`❌ No hay stock de ${producto.nombre_producto}`);
+
+      if (!producto || !producto.producto_id) {
+        toast.error('❌ Producto no encontrado');
         return;
       }
-      
+
+      if (Number(producto.cantidad) <= 0) {
+        toast.warning(`⚠️ "${producto.nombre_producto}" existe pero tiene 0 unidades en esta sucursal`);
+        return;
+      }
+
       agregarAlCarrito(producto);
     } catch (error) {
       if (error.response?.status === 404) {
-        toast.error('❌ Producto no encontrado');
+        toast.error('❌ Producto no encontrado en el catálogo');
       } else {
-        console.error('Error:', error);
+        console.error('Error al buscar producto:', error);
+        toast.error('Error al consultar el producto');
       }
     }
   };
@@ -157,15 +169,25 @@ export function Ventas() {
         
         <div className="flex items-center gap-3 bg-[#f5f0e8] px-4 py-2 rounded-xl border border-[#e2d8cc]">
           <span className="font-bold text-xs uppercase tracking-wider text-[#5a4a3a]">📍 Sucursal:</span>
-          <select
-            value={sucursalId || ''}
-            onChange={(e) => setSucursalId(parseInt(e.target.value))}
-            className="bg-transparent font-bold text-base text-[#5a4a3a] focus:outline-none cursor-pointer"
-          >
-            {sucursales.map(suc => (
-              <option key={suc.id} value={suc.id}>{suc.nombre}</option>
-            ))}
-          </select>
+          {(() => {
+            const user = JSON.parse(localStorage.getItem('usuario') || localStorage.getItem('user') || '{}');
+            const esJefe = user.rol === 'jefe' || user.rol === 'DUENO';
+
+            return (
+              <select
+                value={sucursalId || ''}
+                onChange={(e) => setSucursalId(parseInt(e.target.value))}
+                disabled={!esJefe} // Operadores quedan fijos en su sucursal asignada
+                className={`bg-transparent font-bold text-base text-[#5a4a3a] focus:outline-none ${
+                  esJefe ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'
+                }`}
+              >
+                {sucursales.map(suc => (
+                  <option key={suc.id} value={suc.id}>{suc.nombre}</option>
+                ))}
+              </select>
+            );
+          })()}
         </div>
       </div>
       
