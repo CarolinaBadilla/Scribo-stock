@@ -98,7 +98,6 @@ app.get('/api/health', (req, res) => {
 app.use('/api/autenticacion', autenticacionRoutes);
 
 // 7. Todo lo que sigue exige token
-const { verificarToken } = require('./middleware/auth');
 app.use('/api', verificarToken);
 
 app.use('/api/sucursales', sucursalesRoutes);
