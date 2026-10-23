@@ -22,9 +22,10 @@ services:
     container_name: scribo_backend
     restart: always
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:?Falta definir JWT_SECRET en el .env}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-Scribo_db_pass_super_segura_2026}@postgres_db:5432/${POSTGRES_DB:-scribo_db}?schema=public
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:-secreto_super_seguro_scribo_2026}
     depends_on:
       - postgres_db
     networks:

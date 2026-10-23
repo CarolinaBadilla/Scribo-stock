@@ -16,7 +16,7 @@ const server = http.createServer(app);
 initSocket(server);
 
 // Confiar en Nginx Proxy Manager para obtener la IP real del cliente
-app.set('trust proxy', 1);
+app.set('trust proxy', 2);
 
 // 3. Middlewares de Seguridad y Red
 app.use(
@@ -89,6 +89,7 @@ const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const autenticacionRoutes = require('./routes/autenticacion');
 const reportesController = require('./controllers/reportesController');
+const { verificarToken, permitirRoles } = require('./middleware/auth');
 
 // 6. Rutas públicas
 app.get('/api/health', (req, res) => {
@@ -106,8 +107,7 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
-app.get('/api/estadisticas', reportesController.obtenerEstadisticas);
-
+app.get('/api/estadisticas', verificarToken, permitirRoles('jefe', 'DUENO'), reportesController.obtenerEstadisticas);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API de Librería Stock funcionando correctamente' });

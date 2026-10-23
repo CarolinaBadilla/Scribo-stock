@@ -5,7 +5,7 @@ const { verificarToken } = require('../middleware/auth');
 
 router.use(verificarToken);
 
-router.get('/por-sucursal/:id', stockController.obtenerStockPorSucursal);
+router.get('/por-sucursal/:sucursalId', verificarToken, restringirSucursal, stockController.obtenerStockPorSucursal);
 router.get('/alertas', stockController.obtenerAlertasStockBajo);
 
 module.exports = router;

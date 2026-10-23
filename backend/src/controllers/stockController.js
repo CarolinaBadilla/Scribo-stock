@@ -53,7 +53,7 @@ const obtenerStockPorSucursal = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('❌ Error obteniendo stock:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Ocurrió un error interno en el servidor' })
   }
 };
 
@@ -88,7 +88,7 @@ const actualizarCantidadStock = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error actualizando stock:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Ocurrió un error interno en el servidor' })
   }
 };
 
@@ -127,7 +127,7 @@ const obtenerAlertasStockBajo = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('❌ Error consultando alertas de stock:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Ocurrió un error interno en el servidor' })
   }
 };
 

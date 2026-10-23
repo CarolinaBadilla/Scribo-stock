@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatMoney, formatDate } from '../utils/formatters';
-import * as XLSX from 'xlsx';
 import { Estadisticas } from '../components/Estadisticas';
 
 export function Reportes() {
@@ -83,100 +82,37 @@ export function Reportes() {
   };
 
   
-  const exportarExcel = () => {
-    if (datos.length === 0) return;
+  const exportarExcel = async () => {
+    if (!datos || datos.length === 0) return;
     setExportando(true);
-    
+
     try {
-      let datosExcel = [];
-      switch (tipoReporte) {
-        case 'ventas':
-          datosExcel = datos.map(item => ({
-            'Fecha': formatDate(item.fecha),
-            'Producto': item.nombre_producto || 'Producto eliminado',
-            'Detalle': item.detalle_producto || '-',
-            'Cantidad': Number(item.cantidad || 0),
-            'Precio Unitario': Number(item.precio_unitario || 0),
-            'Total': Number(item.total || 0),
-            'Sucursal': item.sucursal || '-'
-          }));
-          datosExcel.push({
-            'Fecha': '',
-            'Producto': '',
-            'Detalle': '',
-            'Cantidad': '',
-            'Precio Unitario': 'TOTAL:',
-            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
-            'Sucursal': ''
-          });
-          break;
+      const { default: ExcelJS } = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const hoja = workbook.addWorksheet('Reporte');
 
-        case 'compras':
-          datosExcel = datos.map(item => ({
-            'Fecha': formatDate(item.fecha),
-            'Producto': item.nombre_producto || 'Producto eliminado',
-            'Cantidad': Number(item.cantidad || 0),
-            'Precio Unitario': Number(item.precio_unitario || 0),
-            'Total': Number(item.total || 0),
-            'Sucursal': item.sucursal || '-'
-          }));
-          datosExcel.push({
-            'Fecha': '',
-            'Producto': '',
-            'Cantidad': '',
-            'Precio Unitario': 'TOTAL:',
-            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
-            'Sucursal': ''
-          });
-          break;
-
-        case 'stock':
-          datosExcel = datos.map(item => ({
-            'Producto': item.nombre_producto || '-',
-            'Tipo': item.tipo_producto === 'libro' ? 'Libro' : 'Ropa',
-            'Detalle': item.detalle || '-',
-            'Stock': Number(item.cantidad || 0),
-            'Precio Efectivo': Number(item.precio_efectivo || 0),
-            'Precio Tarjeta': Number(item.precio_tarjeta || 0),
-            'Sucursal': item.sucursal_nombre || '-'
-          }));
-          break;
-
-        case 'movimientos':
-          datosExcel = datos.map(item => ({
-            'Fecha': formatDate(item.fecha),
-            'Tipo': item.tipo || '-',
-            'Producto': item.nombre_producto || 'Producto eliminado',
-            'Cantidad': Number(item.cantidad || 0),
-            'Precio Unitario': Number(item.precio_unitario || 0),
-            'Total': Number(item.total || 0),
-            'Sucursal': item.sucursal || '-'
-          }));
-          datosExcel.push({
-            'Fecha': '',
-            'Tipo': '',
-            'Producto': '',
-            'Cantidad': '',
-            'Precio Unitario': 'TOTAL:',
-            'Total': datosExcel.reduce((sum, i) => sum + i.Total, 0),
-            'Sucursal': ''
-          });
-          break;
-
-        default:
-          datosExcel = datos;
+      if (datos.length > 0) {
+        const claves = Object.keys(datos[0]);
+        hoja.columns = claves.map((k) => ({
+          header: k.toUpperCase().replace(/_/g, ' '),
+          key: k,
+          width: 20
+        }));
+        hoja.addRows(datos);
       }
-      
-      const worksheet = XLSX.utils.json_to_sheet(datosExcel);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
-      
-      const fechaActual = new Date().toISOString().split('T')[0];
-      const nombreArchivo = `reporte_${tipoReporte}_${fechaActual}.xlsx`;
-      
-      XLSX.writeFile(workbook, nombreArchivo);
-    } catch (error) {
-      console.error('Error exportando:', error);
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte_${tipoReporte}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al generar Excel:', err);
     } finally {
       setExportando(false);
     }

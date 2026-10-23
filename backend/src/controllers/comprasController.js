@@ -73,7 +73,7 @@ const registrarCompra = async (req, res) => {
   } catch (error) {
     if (client) await client.query('ROLLBACK'); // Deshacer si falla
     console.error('❌ Error registrando compra:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Ocurrió un error interno en el servidor' })
   } finally {
     if (client) client.release(); // Liberar cliente al pool
   }
