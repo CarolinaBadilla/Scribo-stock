@@ -1,18 +1,123 @@
-name: Deploy
+name: DevSecOps CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:   # te deja correrlo a mano desde la pestaña Actions
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'k8s/**'
+      - '.github/workflows/deploy.yml'
+
+permissions:
+  id-token: write   # Requerido obligatoriamente para autenticación OIDC
+  contents: read    # Para clonar el código
 
 jobs:
-  deploy:
+  security-audit:
+    name: Security Shift-Left Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy por SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: /home/debian/scribo_stock/scripts/deploy.sh
+          fetch-depth: 0
+
+      - name: Run Gitleaks (Secret Detection)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-deploy:
+    name: Build, Scan & Deploy
+    needs: security-audit
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_ARN }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS Credentials (OIDC Passwordless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract Image Metadata
+        id: meta
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "IMAGE_TAG=${SHORT_SHA}" >> $GITHUB_ENV
+          echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      # --- BACKEND BUILD & SCAN ---
+      - name: Build Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan Backend Image with Trivy (Vulnerabilities)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          format: 'table'
+          exit-code: '0' # Cambiar a '1' para bloquear el despliegue ante CVEs CRITICAL
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Backend Image to ECR
+        run: |
+          docker push ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+
+      # --- FRONTEND BUILD & SCAN ---
+      - name: Build Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push Frontend Image to ECR
+        run: |
+          docker push ${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+
+      # --- DEPLOYMENT CON KUSTOMIZE ---
+      - name: Set up Kustomize & Kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Deploy to EKS with Kustomize
+        run: |
+          cd k8s/overlays/prod
+          kustomize edit set image scribo-backend=${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          kustomize edit set image scribo-frontend=${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+          kubectl apply -k .
+
+      - name: Verify Rollout Status
+        run: |
+          kubectl rollout status deployment/backend -n scribo-prod --timeout=120s
+          kubectl rollout status deployment/frontend -n scribo-prod --timeout=120s

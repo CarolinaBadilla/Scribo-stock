@@ -27,8 +27,8 @@ app.use(
 
 // 1. Orígenes permitidos dinámicos según el entorno
 const allowedOrigins = [
-  'https://scribo.com.ar',
-  'https://www.scribo.com.ar'
+  'https://web.scribo.com.ar',
+  'https://www.web.scribo.com.ar'
 ];
 
 // Solo agregamos localhost si estamos en desarrollo local
@@ -55,7 +55,7 @@ const corsOptions = {
 
     // 🔒 Bloquear explícitamente cualquier otro origen
     console.warn(`⛔ Intento de acceso bloqueado por CORS desde el origen: ${origin}`);
-    return callback(new Error('Acceso no permitido por la política CORS del servidor'), false);
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

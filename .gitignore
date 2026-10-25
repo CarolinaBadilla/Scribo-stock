@@ -1,22 +1,47 @@
-# Variables de entorno (importante)
-.env
-.env.*
-!.env.example
+# --- Secretos & Credenciales (Crítico) ---
+secrets/
 *.env
-*.env.local
-*.env.production
-*.env.development
+*.env.*
+!*.env.example
+*.pem
+*.key
+*.cert
+*.crt
 
-# Dependencias
+# --- Terraform & IaC ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+**/tfplan
+**/.terraform/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- Dependencias & Builds (Node / React / NestJS) ---
 node_modules/
-
-# Builds
+**/node_modules/
 dist/
 build/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Logs
-*.log
+# --- Bases de datos & Backups locales ---
+*.sql
+*.sql.gz
+*.dump
 
-# Archivos del sistema
+# --- IDE & Sistema Operativo ---
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

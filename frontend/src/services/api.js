@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // ⚠️ Cambiar localhost:3002 por la URL de producción por defecto
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.scribo.com.ar/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,

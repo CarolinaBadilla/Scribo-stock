@@ -6,8 +6,8 @@ let io;
 
 function initSocket(server) {
   const allowedOrigins = [
-    'https://scribo.com.ar',
-    'https://www.scribo.com.ar'
+    'https://web.scribo.com.ar',
+    'https://www.web.scribo.com.ar'
   ];
   if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push('http://localhost:5173');
