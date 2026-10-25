@@ -65,6 +65,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
@@ -92,9 +96,6 @@ const reportesController = require('./controllers/reportesController');
 const { verificarToken, permitirRoles } = require('./middleware/auth');
 
 // 6. Rutas públicas
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
 app.use('/api/autenticacion', autenticacionRoutes);
 
 // 7. Todo lo que sigue exige token

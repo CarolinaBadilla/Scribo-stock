@@ -113,8 +113,8 @@ jobs:
       - name: Deploy to EKS with Kustomize
         run: |
           cd k8s/overlays/prod
-          kustomize edit set image scribo-backend=${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
-          kustomize edit set image scribo-frontend=${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+          kustomize edit set image stock-saas/backend=${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
+          kustomize edit set image stock-saas/frontend=${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
           kubectl apply -k .
 
       - name: Verify Rollout Status

@@ -21,5 +21,5 @@ variable "availability_zones" {
 variable "github_repo" {
   description = "Repositorio de GitHub en formato org/repo o usuario/repo"
   type        = string
-  default     = "TU_USUARIO/TU_REPO" # Reemplaza por tu usuario y repo real (ej. carolbadilla/scribo)
+  default     = "CarolinaBadilla/Scribo-stock" # Reemplaza por tu usuario y repo real (ej. carolbadilla/scribo)
 }
