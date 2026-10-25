@@ -70,22 +70,22 @@ jobs:
           context: ./backend
           push: false
           load: true
-          tags: ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          tags: ${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Scan Backend Image with Trivy (Vulnerabilities)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          image-ref: ${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
           format: 'table'
-          exit-code: '0' # Cambiar a '1' para bloquear el despliegue ante CVEs CRITICAL
+          exit-code: '0'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
 
       - name: Push Backend Image to ECR
         run: |
-          docker push ${{ env.REGISTRY }}/scribo-backend:${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
 
       # --- FRONTEND BUILD & SCAN ---
       - name: Build Frontend Image
@@ -94,13 +94,13 @@ jobs:
           context: ./frontend
           push: false
           load: true
-          tags: ${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+          tags: ${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Push Frontend Image to ECR
         run: |
-          docker push ${{ env.REGISTRY }}/scribo-frontend:${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
 
       # --- DEPLOYMENT CON KUSTOMIZE ---
       - name: Set up Kustomize & Kubectl
@@ -113,11 +113,11 @@ jobs:
       - name: Deploy to EKS with Kustomize
         run: |
           cd k8s/overlays/prod
-          kustomize edit set image stock-saas/backend=${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
-          kustomize edit set image stock-saas/frontend=${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
+          kustomize edit set image ${{ env.REGISTRY }}/stock-saas/backend=${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
+          kustomize edit set image ${{ env.REGISTRY }}/stock-saas/frontend=${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
           kubectl apply -k .
 
       - name: Verify Rollout Status
         run: |
-          kubectl rollout status deployment/backend -n scribo-prod --timeout=120s
-          kubectl rollout status deployment/frontend -n scribo-prod --timeout=120s
+          kubectl rollout status deployment/backend -n scribo-prod --timeout=180s
+          kubectl rollout status deployment/frontend -n scribo-prod --timeout=180s
