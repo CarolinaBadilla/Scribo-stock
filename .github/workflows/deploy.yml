@@ -34,9 +34,9 @@ jobs:
     needs: security-audit
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: ${{ vars.AWS_REGION }}
-      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
-      ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_ARN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+      ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_ARN }}
 
     steps:
       - name: Checkout Code
