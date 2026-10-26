@@ -4,6 +4,13 @@ kind: Kustomization
 namespace: scribo-prod
 
 resources:
-  - ../../base
-  - external-secrets.yaml
-  - scribo-alerts.yaml
+- ../../base
+- external-secrets.yaml
+- scribo-alerts.yaml
+images:
+- name: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/backend
+  newName: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/backend
+  newTag: 5c1882b
+- name: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/frontend
+  newName: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/frontend
+  newTag: 5c1882b
