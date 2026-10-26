@@ -12,7 +12,7 @@ on:
 
 permissions:
   id-token: write   # Requerido obligatoriamente para autenticación OIDC
-  contents: read    # Para clonar el código
+  contents: write    # Para clonar el código
 
 jobs:
   security-audit:
@@ -102,22 +102,21 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
 
-      # --- DEPLOYMENT CON KUSTOMIZE ---
-      - name: Set up Kustomize & Kubectl
-        uses: azure/setup-kubectl@v4
+      # --- GITOPS: ACTUALIZAR MANIFIESTO EN GIT PARA ARGOCD ---
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
 
-      - name: Update Kubeconfig
+      - name: Update Image Tags in Kustomize & Push to Git
         run: |
-          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-
-      - name: Deploy to EKS with Kustomize
-        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Actualizar los tags de imagen en k8s/overlays/prod/kustomization.yaml
           cd k8s/overlays/prod
           kustomize edit set image ${{ env.REGISTRY }}/stock-saas/backend=${{ env.REGISTRY }}/stock-saas/backend:${{ env.IMAGE_TAG }}
           kustomize edit set image ${{ env.REGISTRY }}/stock-saas/frontend=${{ env.REGISTRY }}/stock-saas/frontend:${{ env.IMAGE_TAG }}
-          kubectl apply -k .
-
-      - name: Verify Rollout Status
-        run: |
-          kubectl rollout status deployment/backend -n scribo-prod --timeout=180s
-          kubectl rollout status deployment/frontend -n scribo-prod --timeout=180s
+          
+          # Commitear y pushear el cambio para que ArgoCD lo tome
+          cd ../../..
+          git add k8s/overlays/prod/kustomization.yaml
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(gitops): bump images to ${{ env.IMAGE_TAG }} [skip ci]" && git push origin main)s
