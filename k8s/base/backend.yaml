@@ -24,6 +24,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend-serviceaccount
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
