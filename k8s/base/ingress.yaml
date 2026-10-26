@@ -5,6 +5,7 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:us-east-1:512902043510:regional/webacl/scribo-prod-alb-waf/65675670-8b20-407d-9350-b9d7be5a2738"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:512902043510:certificate/be1b5476-1ab9-4813-8cdd-ef81ee8cd1dc"

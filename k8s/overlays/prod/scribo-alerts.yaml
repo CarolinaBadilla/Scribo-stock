@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: scribo-production-rules
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    prometheus: kube-prometheus-stack
+spec:
+  groups:
+    - name: scribo-saas.rules
+      rules:
+        - alert: BackendPodDown
+          expr: sum(kube_pod_status_phase{namespace="scribo-prod", phase="Running", pod=~"backend-.*"}) < 1
+          for: 1m
+          labels:
+            severity: critical
+            namespace: scribo-prod
+          annotations:
+            summary: "Backend caído en scribo-prod"
+            description: "No hay ningún pod de backend activo en scribo-prod durante más de 1 minuto."
+
+        - alert: PodHighMemory
+          expr: (sum(container_memory_working_set_bytes{namespace="scribo-prod", container!=""}) by (pod) / sum(kube_pod_container_resource_limits{namespace="scribo-prod", resource="memory"}) by (pod)) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+            namespace: scribo-prod
+          annotations:
+            summary: "Uso de memoria alto en pod"
+            description: "El pod {{ $labels.pod }} superó el 85% de su límite de memoria durante 5 minutos."

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scribo-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/CarolinaBadilla/Scribo-stock.git' # Reemplaza con la URL de tu repo
+    targetRevision: main                                       # Rama productiva
+    path: k8s/overlays/prod                                    # Directorio Kustomize
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: scribo-prod
+  syncPolicy:
+    automated:
+      prune: true     # Borra en el clúster recursos que se eliminen del repo
+      selfHeal: true  # Si alguien cambia algo manualmente con kubectl, lo corrige
+    syncOptions:
+      - CreateNamespace=false

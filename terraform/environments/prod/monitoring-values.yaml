@@ -35,6 +35,7 @@ grafana:
       defaultDatasourceEnabled: true
 
 alertmanager:
+  enabled: true
   alertmanagerSpec:
     resources:
       requests:
@@ -43,9 +44,32 @@ alertmanager:
       limits:
         cpu: 100m
         memory: 128Mi
-
-nodeExporter:
-  enabled: true
-
-kubeStateMetrics:
-  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'namespace']
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+      receiver: 'chat-alerts'
+      routes:
+        - receiver: 'null'
+          matchers:
+            - alertname = Watchdog
+        - receiver: 'chat-alerts'
+          matchers:
+            - alertname =~ ".*"
+    receivers:
+      - name: 'null'
+      - name: 'chat-alerts'
+        slack_configs:
+          - api_url: 'https://discord.com/api/webhooks/1564134862246649928/hGXs2H4fHymvIwI0_INLLDqR0INtFviQwZE1Rbt8c9X0iAEL-LoUDJWTneOMmtTRcaQS/slack'
+            channel: '#notis_aws'
+            send_resolved: true
+            title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} ({{ .CommonLabels.namespace }})'
+            text: >-
+              *Alerta:* {{ .CommonLabels.alertname }}
+              *Severidad:* `{{ .CommonLabels.severity }}`
+              *Descripción:* {{ .CommonAnnotations.description }}
+              *Resumen:* {{ .CommonAnnotations.summary }}

@@ -7,4 +7,5 @@ resources:
   - ingress.yaml
   - hpa.yaml
   - pdb.yaml
+  - argocd-scribo-prod.yaml
   

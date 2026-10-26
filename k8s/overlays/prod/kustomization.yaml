@@ -6,3 +6,4 @@ namespace: scribo-prod
 resources:
   - ../../base
   - external-secrets.yaml
+  - scribo-alerts.yaml
