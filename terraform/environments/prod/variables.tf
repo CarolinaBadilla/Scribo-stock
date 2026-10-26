@@ -23,3 +23,9 @@ variable "github_repo" {
   type        = string
   default     = "CarolinaBadilla/Scribo-stock" # Reemplaza por tu usuario y repo real (ej. carolbadilla/scribo)
 }
+
+variable "db_password" {
+  description = "Contraseña maestra para RDS PostgreSQL"
+  type        = string
+  sensitive   = true
+}

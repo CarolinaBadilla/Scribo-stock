@@ -35,9 +35,17 @@ spec:
           ports:
             - containerPort: 3000
               name: http
+          env:
+            - name: NODE_EXTRA_CA_CERTS
+              value: "/etc/ssl/certs/rds-global-bundle.pem"
           envFrom:
             - secretRef:
                 name: app-secrets
+          volumeMounts:
+            - name: rds-ca-cert
+              mountPath: /etc/ssl/certs/rds-global-bundle.pem
+              subPath: global-bundle.pem
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -67,3 +75,7 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 2
+      volumes:
+        - name: rds-ca-cert
+          configMap:
+            name: rds-ca-bundle
