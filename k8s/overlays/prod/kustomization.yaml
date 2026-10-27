@@ -10,7 +10,7 @@ resources:
 images:
 - name: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/backend
   newName: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/backend
-  newTag: 5c1882b
+  newTag: 1f43eec
 - name: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/frontend
   newName: 512902043510.dkr.ecr.us-east-1.amazonaws.com/stock-saas/frontend
-  newTag: 5c1882b
+  newTag: 1f43eec
