@@ -1,0 +1,39 @@
+global:
+  clusterId: "stock-saas-prod-cluster"
+  grafana:
+    enabled: false
+  prometheus:
+    enabled: true
+  federatedStorage:
+    config: |-
+      type: local
+
+finopsagent:
+  enabled: true
+federatedETL:
+  agentOnly: false
+
+prometheus:
+  server:
+    global:
+      external_labels:
+        cluster_id: "stock-saas-prod-cluster"
+    persistentVolume:
+      enabled: false
+
+persistentVolume:
+  enabled: false
+
+forecasting:
+  enabled: false
+
+networkCosts:
+  enabled: false
+
+clusterController:
+  enabled: false
+
+costAnalyzer:
+  requests:
+    cpu: "50m"
+    memory: "128Mi"
