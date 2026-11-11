@@ -27,8 +27,8 @@ app.use(
 
 // 1. Orígenes permitidos dinámicos según el entorno
 const allowedOrigins = [
-  'https://scribo.com.ar',
-  'https://www.scribo.com.ar'
+  'https://scribo.teleios-studio.com.ar',
+  'https://www.scribo.teleios-studio.com.ar'
 ];
 
 // Solo agregamos localhost si estamos en desarrollo local
