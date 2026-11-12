@@ -88,6 +88,7 @@ const ventasRoutes = require('./routes/ventas');
 const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const autenticacionRoutes = require('./routes/autenticacion');
+const pagosRoutes = require('./routes/pagos');
 const reportesController = require('./controllers/reportesController');
 const { verificarToken, permitirRoles } = require('./middleware/auth');
 
@@ -96,6 +97,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK' });
 });
 app.use('/api/autenticacion', autenticacionRoutes);
+app.use('/api/pagos', pagosRoutes);
 
 // 7. Todo lo que sigue exige token
 app.use('/api', verificarToken);

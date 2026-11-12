@@ -163,6 +163,10 @@ const obtenerStockActual = async (req, res) => {
 const obtenerMovimientos = async (req, res) => {
   try {
     const { sucursalId, fechaInicio, fechaFin } = req.query;
+    const esAdmin = req.usuario?.rol === 'jefe' || req.usuario?.rol === 'DUENO';
+    const sucursalObjetivo = esAdmin 
+      ? (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined' && sucursalId !== '' ? parseInt(sucursalId, 10) : null)
+      : req.usuario?.sucursalId;
 
     let sql = `
       SELECT 
@@ -187,8 +191,8 @@ const obtenerMovimientos = async (req, res) => {
 
     const params = [];
 
-    if (sucursalId && sucursalId !== 'null' && sucursalId !== 'undefined' && sucursalId !== '') {
-      params.push(parseInt(sucursalId, 10));
+    if (sucursalObjetivo) {
+      params.push(parseInt(sucursalObjetivo, 10));
       sql += ` AND m.sucursal_id = $${params.length}`;
     }
 

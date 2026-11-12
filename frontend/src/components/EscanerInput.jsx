@@ -1,7 +1,7 @@
 // src/components/EscanerInput.jsx
 import { useState, useRef, useEffect } from 'react';
 
-export function EscanerInput({ onProductoEncontrado, placeholder = "Escanea el código de barras o escríbelo..." }) {
+export function EscanerInput({ onProductoEncontrado, placeholder = "Acerca el producto o escanea el código..." }) {
   const [codigo, setCodigo] = useState('');
   const inputRef = useRef(null);
 
@@ -18,6 +18,12 @@ export function EscanerInput({ onProductoEncontrado, placeholder = "Escanea el c
     setCodigo('');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-2">
       <div className="relative flex items-center">
@@ -26,6 +32,7 @@ export function EscanerInput({ onProductoEncontrado, placeholder = "Escanea el c
           type="text"
           value={codigo}
           onChange={(e) => setCodigo(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="w-full px-4 py-3 bg-white border border-[#e2d8cc] rounded-xl text-sm font-bold text-[#5a4a3a] placeholder-[#8a7a6a]/60 focus:outline-none focus:border-[#5a4a3a] shadow-xs"
         />

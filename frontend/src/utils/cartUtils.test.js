@@ -1,14 +1,6 @@
 // src/utils/cartUtils.test.js
 import { describe, it, expect } from 'vitest';
-
-// Esta función debería estar en un archivo utils
-const calcularTotalCarrito = (carrito, tipoPago) => {
-  return carrito.reduce((sum, item) => {
-    const precio = tipoPago === 'efectivo' ? item.precioEfectivo : item.precioTarjeta;
-    const precioConDescuento = precio * (1 - (item.descuento || 0) / 100);
-    return sum + (precioConDescuento * item.cantidad);
-  }, 0);
-};
+import { calcularTotalCarrito } from './cartUtils';
 
 describe('calcularTotalCarrito', () => {
   it('debe calcular total sin descuentos', () => {

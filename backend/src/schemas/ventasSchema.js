@@ -3,9 +3,10 @@ const { z } = require('zod');
 
 const registrarVentaSchema = z.object({
   sucursalId: z.coerce.number().int().positive('La sucursal debe ser un ID válido'),
-  tipoPago: z.enum(['efectivo', 'tarjeta'], {
-    errorMap: () => ({ message: 'El medio de pago debe ser "efectivo" o "tarjeta"' })
+  tipoPago: z.enum(['efectivo', 'tarjeta', 'mercadopago'], {
+    errorMap: () => ({ message: 'El medio de pago debe ser "efectivo", "tarjeta" o "mercadopago"' })
   }),
+  ventaId: z.string().trim().max(100).optional(),
   items: z.array(
     z.object({
       tipoProducto: z.enum(['libro', 'ropa'], {
