@@ -62,4 +62,10 @@ function emitVentaRegistrada(data) {
   }
 }
 
-module.exports = { initSocket, emitStockUpdate, emitVentaRegistrada };
+function emitPagoAprobado(data) {
+  if (io) {
+    io.emit('pago-aprobado', data);
+  }
+}
+
+module.exports = { initSocket, emitStockUpdate, emitVentaRegistrada, emitPagoAprobado };

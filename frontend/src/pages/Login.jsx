@@ -1,8 +1,12 @@
 // src/pages/Login.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api'; 
+import { useAuth } from '../context/AuthContext';
 
 export function Login() {
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -10,11 +14,10 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      window.location.href = '/ventas';
+    if (isAuthenticated) {
+      navigate('/ventas', { replace: true });
     }
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,9 +33,8 @@ export function Login() {
       const { token, usuario } = response.data;
 
       if (token) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(usuario));
-        window.location.href = '/ventas';
+        login(token, usuario);
+        navigate('/ventas', { replace: true });
       }
     } catch (err) {
       console.error('Error al iniciar sesión:', err);

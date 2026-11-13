@@ -1,7 +1,7 @@
 // src/components/Estadisticas.jsx
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { formatMoney } from '../utils/formatters';
+import { formatMoney, formatearCantidadStock } from '../utils/formatters';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -194,10 +194,10 @@ export function Estadisticas({ sucursales = [] }) {
                       <p className="text-[10px] text-[#8a7a6a] font-medium">{producto.sucursal_nombre}</p>
                     </div>
                     <div className="text-right">
-                      <p className={`text-xs font-bold ${producto.cantidad === 0 ? 'text-rose-600' : 'text-amber-600'}`}>
-                        {producto.cantidad} und
+                      <p className={`text-xs font-bold ${Number(producto.cantidad) === 0 ? 'text-rose-600' : 'text-amber-600'}`}>
+                        {formatearCantidadStock(producto.cantidad, producto.es_pesable, producto.unidad_medida)}
                       </p>
-                      <p className="text-[10px] text-[#8a7a6a]">Min: {producto.stock_minimo}</p>
+                      <p className="text-[10px] text-[#8a7a6a]">Min: {formatearCantidadStock(producto.stock_minimo, producto.es_pesable, producto.unidad_medida)}</p>
                     </div>
                   </div>
                 ))}

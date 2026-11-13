@@ -21,11 +21,15 @@ const iniciarSesion = async (req, res) => {
       return res.status(400).json({ error: 'Debes proporcionar usuario/email y contraseña' });
     }
 
-    // 1. Buscar directamente en la tabla usuarios
+    // 1. Buscar en usuarios haciendo JOIN con comercios y sucursales
     const result = await db.query(
-      `SELECT u.id, u.usuario, u.email, u.clave, u.rol, u.sucursal_id, s.nombre as sucursal_nombre 
+      `SELECT 
+         u.id, u.usuario, u.email, u.clave, u.rol, u.sucursal_id, u.comercio_id,
+         s.nombre as sucursal_nombre,
+         c.nombre_comercial, c.rubro_principal, c.activo as comercio_activo
        FROM usuarios u 
        LEFT JOIN sucursales s ON u.sucursal_id = s.id 
+       LEFT JOIN comercios c ON u.comercio_id = c.id
        WHERE LOWER(u.email) = $1 OR LOWER(u.usuario) = $1 
        LIMIT 1`,
       [identificador]
@@ -42,6 +46,14 @@ const iniciarSesion = async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
+    // 2.1 Validar que el comercio exista y esté activo
+    if (!usuarioDb.comercio_id) {
+      return res.status(403).json({ error: 'Usuario no tiene un comercio asignado. Contacta al administrador.' });
+    }
+    if (usuarioDb.comercio_activo === false) {
+      return res.status(403).json({ error: 'El comercio se encuentra inactivo. Contacta a soporte.' });
+    }
+
     // 3. Control de acceso por sucursal: los operadores DEBEN tener sucursal asignada
     const esJefeODueno = usuarioDb.rol === 'jefe' || usuarioDb.rol === 'DUENO';
     if (!esJefeODueno && !usuarioDb.sucursal_id) {
@@ -50,14 +62,20 @@ const iniciarSesion = async (req, res) => {
       });
     }
 
-    // 4. Estructura del payload para el token
+    // 4. Estructura del payload para el token y frontend
     const usuarioRespuesta = {
       id: usuarioDb.id,
       email: usuarioDb.email,
       usuario: usuarioDb.usuario,
       rol: usuarioDb.rol,
       sucursalId: usuarioDb.sucursal_id || null,
-      sucursalNombre: usuarioDb.sucursal_nombre || (esJefeODueno ? 'Todas las sucursales' : 'Sin asignar')
+      sucursalNombre: usuarioDb.sucursal_nombre || (esJefeODueno ? 'Todas las sucursales' : 'Sin asignar'),
+      comercio_id: usuarioDb.comercio_id,
+      comercioId: usuarioDb.comercio_id,
+      nombre_comercial: usuarioDb.nombre_comercial || 'Comercio',
+      nombreComercial: usuarioDb.nombre_comercial || 'Comercio',
+      rubro_principal: usuarioDb.rubro_principal || 'general',
+      rubroPrincipal: usuarioDb.rubro_principal || 'general'
     };
 
     // 5. Firmar el Token JWT fijando el algoritmo HS256
@@ -87,6 +105,11 @@ const obtenerPerfil = async (req, res) => {
     }
 
     const decodificado = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    if (!decodificado.comercio_id && !decodificado.comercioId) {
+      return res.status(403).json({ error: 'Token desactualizado: falta comercio_id. Por favor, inicia sesión nuevamente.' });
+    }
+    decodificado.comercio_id = Number(decodificado.comercio_id || decodificado.comercioId);
+    decodificado.comercioId = decodificado.comercio_id;
     return res.json(decodificado);
   } catch (error) {
     return res.status(401).json({ error: 'Sesión expirada o token inválido' });

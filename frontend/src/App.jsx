@@ -8,12 +8,12 @@ import { Ventas } from './pages/Ventas';
 import { Dashboard } from './pages/Dashboard';
 import { Compras } from './pages/Compras';
 import { Reportes } from './pages/Reportes';
+import { ConfiguracionIntegraciones } from './pages/ConfiguracionIntegraciones';
 import { AlertasStock } from './components/AlertasStock';
-import api from './services/api';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+function AppRoutes() {
+  const { isAuthenticated, loading } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -24,33 +24,6 @@ function App() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  useEffect(() => {
-    verificarSesion();
-  }, []);
-
-  const verificarSesion = async () => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      setIsAuthenticated(false);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Validar la vigencia del token contra el backend de Node
-      await api.get('/autenticacion/perfil');
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.warn('Sesión no válida o token expirado:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -75,6 +48,36 @@ function App() {
 
   return (
     <>
+      {isAuthenticated && <AlertasStock />}
+
+      <Routes>
+        {!isAuthenticated ? (
+          <>
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Layout />}>
+              <Route index element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="ventas" element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
+              <Route path="compras" element={isMobile ? <Navigate to="/dashboard" replace /> : <Compras />} />
+              <Route path="reportes" element={isMobile ? <Navigate to="/dashboard" replace /> : <Reportes />} />
+              <Route path="integraciones" element={<ConfiguracionIntegraciones />} />
+            </Route>
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        )}
+      </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <>
       <Toaster 
         position="top-right" 
         richColors 
@@ -83,29 +86,10 @@ function App() {
         }}
       />
       
-      {isAuthenticated && <AlertasStock />}
-
       <BrowserRouter>
-        <Routes>
-          {!isAuthenticated ? (
-            <>
-              <Route path="/login" element={<Login />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </>
-          ) : (
-            <>
-              <Route path="/" element={<Layout />}>
-                <Route index element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="ventas" element={isMobile ? <Navigate to="/dashboard" replace /> : <Ventas />} />
-                <Route path="compras" element={isMobile ? <Navigate to="/dashboard" replace /> : <Compras />} />
-                <Route path="reportes" element={isMobile ? <Navigate to="/dashboard" replace /> : <Reportes />} />
-              </Route>
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          )}
-        </Routes>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </>
   );

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { EscanerInput } from '../components/EscanerInput';
-import { formatMoney } from '../utils/formatters';
+import { formatMoney, formatearCantidadStock } from '../utils/formatters';
 import { toast } from 'sonner';
 
 export function Compras() {
@@ -20,6 +20,12 @@ export function Compras() {
   }, []);
 
   const cargarSucursales = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get('/sucursales');
       setSucursales(response.data);
@@ -216,7 +222,7 @@ export function Compras() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-base text-[#5a4a3a] truncate">{item.nombre}</p>
                       <p className="text-xs font-semibold text-[#8a7a6a]">
-                        {item.cantidad} un. x {formatMoney(item.precioCompra)} c/u
+                        {formatearCantidadStock(item.cantidad, item.es_pesable, item.unidad_medida)} x {formatMoney(item.precioCompra)} c/u
                       </p>
                     </div>
 

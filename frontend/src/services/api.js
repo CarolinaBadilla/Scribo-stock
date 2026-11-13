@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from 'axios';
 
-// ⚠️ Cambiar localhost:3002 por la URL de producción por defecto
+// URL del backend Node.js
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.scribo.teleios-studio.com.ar/api';
 
 const api = axios.create({
@@ -27,9 +27,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Si la petición fue cancelada intencionalmente, no redirigir
+    if (axios.isCancel(error)) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('usuario');
+      sessionStorage.clear();
       
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';

@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { LeyendaColores } from '../components/LeyendaColores';
-import { formatMoney } from '../utils/formatters';
+import { formatMoney, formatearAtributos, formatearCantidadStock } from '../utils/formatters';
 import { ModalEditarProducto } from '../components/ModalEditarProducto';
 import { ModalAgregarProducto } from '../components/ModalAgregarProducto';
+import { ModalActualizarPrecios } from '../components/ModalActualizarPrecios';
 
 export function Dashboard() {
   const [stock, setStock] = useState([]);
@@ -16,6 +17,7 @@ export function Dashboard() {
   const [productoEditando, setProductoEditando] = useState(null);
   const [tipoEditando, setTipoEditando] = useState(null);
   const [mostrarAgregar, setMostrarAgregar] = useState(false);
+  const [mostrarActualizarPrecios, setMostrarActualizarPrecios] = useState(false);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const esJefe = user.rol === 'jefe' || user.rol === 'DUENO';
@@ -31,6 +33,12 @@ export function Dashboard() {
   }, [sucursalSeleccionada, filtroTipo, busqueda]);
 
   const cargarSucursales = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get('/sucursales');
       const data = response.data || [];
@@ -84,7 +92,19 @@ export function Dashboard() {
     if (!confirmar) return;
     
     try {
-      await api.delete(`/productos/${producto.tipo_producto}/${producto.producto_id}`);
+      const targetId = producto.producto_unificado_id || producto.producto_id;
+      if (producto.tipo_producto && producto.producto_id) {
+        await api.delete(`/productos/${producto.tipo_producto}/${producto.producto_id}`);
+      } else {
+        await api.delete(`/productos/${targetId}`);
+      }
+
+      // Quitar inmediatamente del estado local de la lista sin recargar la página
+      setStock(prev => prev.filter(item => {
+        const itemId = item.producto_unificado_id || item.producto_id;
+        return itemId !== targetId && item.id !== producto.id;
+      }));
+
       alert('✅ Producto eliminado correctamente');
       cargarStock();
     } catch (error) {
@@ -102,14 +122,27 @@ export function Dashboard() {
           <h1 className="text-2xl font-black text-[#5a4a3a] tracking-tight">📊 Control de Stock</h1>
           <p className="text-xs font-bold text-[#8a7a6a] mt-0.5">Gestión e inventario en tiempo real</p>
         </div>
-        <button 
-          onClick={() => setMostrarAgregar(true)} 
-          style={{ backgroundColor: '#5a4a3a', color: '#ffffff' }}
-          className="px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#43372b] flex items-center gap-2 transition-all text-xs sm:text-sm cursor-pointer border border-[#43372b]"
-        >
-          <span>➕</span>
-          <span>Nuevo Producto</span>
-        </button>
+        <div className="flex gap-2">
+          {esJefe && (
+            <button 
+              type="button"
+              onClick={() => setMostrarActualizarPrecios(true)} 
+              className="px-4 py-2.5 rounded-xl font-bold bg-[#f5f0e8] hover:bg-[#e2d8cc] text-[#5a4a3a] border border-[#e2d8cc] flex items-center gap-2 transition-all text-xs sm:text-sm cursor-pointer shadow-xs"
+            >
+              <span>🏷️</span>
+              <span>Actualizar Precios</span>
+            </button>
+          )}
+          <button 
+            type="button"
+            onClick={() => setMostrarAgregar(true)} 
+            style={{ backgroundColor: '#5a4a3a', color: '#ffffff' }}
+            className="px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#43372b] flex items-center gap-2 transition-all text-xs sm:text-sm cursor-pointer border border-[#43372b]"
+          >
+            <span>➕</span>
+            <span>Nuevo Producto</span>
+          </button>
+        </div>
       </div>
 
       {/* Sucursal y Leyenda */}
@@ -204,11 +237,11 @@ export function Dashboard() {
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#8a7a6a] bg-[#f5f0e8] px-2 py-0.5 rounded-md border border-[#e2d8cc]">
-                        {producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}
+                        {producto.tipo_producto === 'libro' ? '📚 Libro' : producto.tipo_producto === 'ropa' ? '👕 Ropa' : '📦 General'}
                       </span>
                       <p className="font-bold text-sm text-[#5a4a3a] mt-1.5">{producto.nombre_producto || '-'}</p>
                       <p className="text-xs font-medium text-[#8a7a6a] mt-0.5">
-                        {producto.detalle || '-'}
+                        {formatearAtributos(producto)}
                       </p>
                     </div>
                     
@@ -217,7 +250,7 @@ export function Dashboard() {
                       producto.cantidad >= 6 ? 'bg-emerald-600 text-white' :
                       producto.cantidad >= 1 ? 'bg-amber-500 text-white' : 'bg-rose-600 text-white'
                     }`}>
-                      {producto.cantidad || 0} und
+                      {formatearCantidadStock(producto.cantidad, producto.es_pesable, producto.unidad_medida)}
                     </span>
                   </div>
 
@@ -279,11 +312,11 @@ export function Dashboard() {
                   stock.map((producto, index) => (
                     <tr key={index} className="hover:bg-[#f5f0e8]/40 transition-colors">
                       <td className="p-4 font-bold text-xs text-[#8a7a6a]">
-                        {producto.tipo_producto === 'libro' ? '📚 Libro' : '👕 Ropa'}
+                        {producto.tipo_producto === 'libro' ? '📚 Libro' : producto.tipo_producto === 'ropa' ? '👕 Ropa' : '📦 General'}
                       </td>
                       <td className="p-4 font-bold text-[#5a4a3a]">{producto.nombre_producto || '-'}</td>
                       <td className="p-4 text-[#8a7a6a] text-xs font-medium">
-                        {producto.detalle || '-'}
+                        {formatearAtributos(producto)}
                       </td>
                       <td className="p-4 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block shadow-xs ${
@@ -291,7 +324,7 @@ export function Dashboard() {
                           producto.cantidad >= 6 ? 'bg-emerald-600 text-white' :
                           producto.cantidad >= 1 ? 'bg-amber-500 text-white' : 'bg-rose-600 text-white'
                         }`}>
-                          {producto.cantidad || 0} und
+                          {formatearCantidadStock(producto.cantidad, producto.es_pesable, producto.unidad_medida)}
                         </span>
                       </td>
                       <td className="p-4 text-right font-bold text-[#5a4a3a]">{formatMoney(producto.precio_efectivo || 0)}</td>
@@ -347,6 +380,13 @@ export function Dashboard() {
             cargarStock();
             setMostrarAgregar(false);
           }}
+        />
+      )}
+
+      {mostrarActualizarPrecios && (
+        <ModalActualizarPrecios
+          onClose={() => setMostrarActualizarPrecios(false)}
+          onActualizado={cargarStock}
         />
       )}
     </div>

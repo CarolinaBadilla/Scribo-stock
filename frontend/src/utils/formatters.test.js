@@ -1,6 +1,6 @@
 // src/utils/formatters.test.js
 import { describe, it, expect } from 'vitest';
-import { formatMoney, formatDate } from './formatters';
+import { formatMoney, formatDate, formatearAtributos, formatearCantidadStock } from './formatters';
 
 describe('formatMoney', () => {
   it('debe formatear números correctamente', () => {
@@ -45,5 +45,58 @@ describe('formatDate', () => {
     expect(formatDate(null)).toBe('-');
     expect(formatDate(undefined)).toBe('-');
     expect(formatDate('')).toBe('-');
+  });
+});
+
+describe('formatearAtributos', () => {
+  it('debe formatear libro con autor y editorial legible', () => {
+    const prod = {
+      categoria: 'libro',
+      atributos: { autor: 'Jorge Luis Borges', editorial: 'Sudamericana' }
+    };
+    expect(formatearAtributos(prod)).toBe('"Jorge Luis Borges" - Sudamericana');
+  });
+
+  it('debe formatear ropa con talle y color legible', () => {
+    const prod = {
+      categoria: 'ropa',
+      atributos: { talle: 'M', color: 'Azul Marino' }
+    };
+    expect(formatearAtributos(prod)).toBe('Talle: M / Color: Azul Marino');
+  });
+
+  it('debe formatear atributos genéricos para otros rubros', () => {
+    const prod = {
+      categoria: 'fiambreria',
+      atributos: { marca: 'La Paulina', origen: 'Córdoba' }
+    };
+    expect(formatearAtributos(prod)).toBe('Marca: La Paulina · Origen: Córdoba');
+  });
+
+  it('debe sanitizar strings JSON crudos en detalle sin mostrar llaves crudas', () => {
+    const prod = {
+      categoria: 'general',
+      detalle: '{"marca": "Scribo", "tipo": "Cuaderno"}'
+    };
+    expect(formatearAtributos(prod)).toBe('Marca: Scribo · Tipo: Cuaderno');
+  });
+
+  it('debe devolver "-" si no hay atributos ni detalle', () => {
+    expect(formatearAtributos({})).toBe('-');
+    expect(formatearAtributos(null)).toBe('-');
+  });
+});
+
+describe('formatearCantidadStock', () => {
+  it('debe formatear productos pesables con 3 decimales y unidad', () => {
+    expect(formatearCantidadStock(0.35, true, 'kg')).toBe('0.350 kg');
+    expect(formatearCantidadStock(1.2, true, 'kg')).toBe('1.200 kg');
+    expect(formatearCantidadStock('0.450', true, 'kg')).toBe('0.450 kg');
+  });
+
+  it('debe formatear productos no pesables como enteros sin decimales innecesarios', () => {
+    expect(formatearCantidadStock(7, false)).toBe('7 und');
+    expect(formatearCantidadStock('15.000', false)).toBe('15 und');
+    expect(formatearCantidadStock(0, false)).toBe('0 und');
   });
 });

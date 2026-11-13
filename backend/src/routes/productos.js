@@ -4,12 +4,34 @@ const router = express.Router();
 const productosController = require('../controllers/productosController');
 const { verificarToken, permitirRoles } = require('../middleware/auth');
 const { validar } = require('../middleware/validar');
-const { crearProductoSchema } = require('../schemas/productosSchema');
+const { crearProductoSchema, actualizarPreciosMasivoSchema, actualizarPreciosLoteSchema } = require('../schemas/productosSchema');
 
-// Buscar requiere sesión activa
+// Búsqueda rápida para caja y lector de balanza / códigos de barras
 router.get('/buscar', verificarToken, productosController.buscarProductoPorCodigo);
 
-// Crear producto: Token -> Rol -> Validación Zod -> Controlador
+// Actualización masiva de precios por porcentaje y redondeo
+router.post(
+  '/actualizar-precios-masivo',
+  verificarToken,
+  permitirRoles('jefe', 'DUENO'),
+  validar(actualizarPreciosMasivoSchema),
+  productosController.actualizarPreciosMasivo
+);
+
+// Actualización de precios en lote / edición manual rápida
+router.put(
+  '/precios-lote',
+  verificarToken,
+  permitirRoles('jefe', 'DUENO'),
+  validar(actualizarPreciosLoteSchema),
+  productosController.actualizarPreciosLote
+);
+
+// Catálogo unificado multi-tenant
+router.get('/', verificarToken, productosController.obtenerProductos);
+router.get('/:id', verificarToken, productosController.obtenerProductoPorId);
+
+// Crear producto unificado
 router.post(
   '/', 
   verificarToken, 
@@ -18,7 +40,14 @@ router.post(
   productosController.crearProducto
 );
 
-// Modificar producto (admite actualización parcial)
+// Modificar producto unificado (soporta /:id y ruta legacy /:tipo/:id)
+router.put(
+  '/:id', 
+  verificarToken, 
+  permitirRoles('jefe', 'DUENO'), 
+  validar(crearProductoSchema.partial()), 
+  productosController.actualizarProducto
+);
 router.put(
   '/:tipo/:id', 
   verificarToken, 
@@ -27,7 +56,13 @@ router.put(
   productosController.actualizarProducto
 );
 
-// Eliminar producto
+// Baja lógica de producto (soporta /:id y ruta legacy /:tipo/:id)
+router.delete(
+  '/:id', 
+  verificarToken, 
+  permitirRoles('jefe', 'DUENO'), 
+  productosController.eliminarProducto
+);
 router.delete(
   '/:tipo/:id', 
   verificarToken, 

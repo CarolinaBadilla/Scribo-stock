@@ -89,6 +89,7 @@ const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const autenticacionRoutes = require('./routes/autenticacion');
 const pagosRoutes = require('./routes/pagos');
+const integracionesRoutes = require('./routes/integraciones');
 const reportesController = require('./controllers/reportesController');
 const { verificarToken, permitirRoles } = require('./middleware/auth');
 
@@ -108,6 +109,7 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/ventas', ventasRoutes);
 app.use('/api/compras', comprasRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api/integraciones', integracionesRoutes);
 app.get('/api/estadisticas', verificarToken, permitirRoles('jefe', 'DUENO'), reportesController.obtenerEstadisticas);
 
 app.get('/', (req, res) => {

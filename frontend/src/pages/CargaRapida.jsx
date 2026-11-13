@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { EscanerInput } from '../components/EscanerInput';
-import { formatMoney } from '../utils/formatters';
+import { formatMoney, formatearCantidadStock } from '../utils/formatters';
 import { toast } from 'sonner';
 
 export function CargaRapida() {
@@ -20,6 +20,9 @@ export function CargaRapida() {
   }, []);
 
   const cargarSucursales = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     try {
       const response = await api.get('/sucursales');
       setSucursales(response.data);
@@ -185,7 +188,9 @@ export function CargaRapida() {
 
                   <div>
                     <p className="text-[10px] font-bold uppercase text-[#8a7a6a]">Stock Actual</p>
-                    <p className="text-xs font-bold text-[#5a4a3a]">{producto.cantidad || 0} unidades</p>
+                    <p className="text-xs font-bold text-[#5a4a3a]">
+                      {formatearCantidadStock(producto.cantidad, producto.es_pesable, producto.unidad_medida)}
+                    </p>
                   </div>
 
                   <div>

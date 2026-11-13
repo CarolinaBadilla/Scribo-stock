@@ -36,11 +36,16 @@ export const formatearItemsVenta = (carrito, metodoPago = 'efectivo') => {
     const precio = obtenerPrecioAplicable(item, metodoPago);
     return {
       tipoProducto: item.tipo,
-      productoId: item.id,
+      categoria: item.categoria || item.tipo,
+      productoId: item.id || null,
+      producto_unificado_id: item.producto_unificado_id || item.id || null,
+      nombre: item.nombre || 'Varios',
+      descripcion: item.nombre || 'Varios',
       cantidad: item.cantidad,
       precioUnitario: precio,
       precio_unitario: precio,
-      descuento: item.descuento || 0
+      descuento: item.descuento || 0,
+      es_temporal: Boolean(item.es_temporal)
     };
   });
 };

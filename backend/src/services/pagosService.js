@@ -2,6 +2,8 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const { pool } = require('../config/db');
+const { desencriptarTexto } = require('../utils/cryptoUtils');
+const { emitPagoAprobado, emitStockUpdate, emitVentaRegistrada } = require('../socket');
 
 const pagosStore = new Map();
 let tablaInicializada = false;
@@ -17,6 +19,7 @@ async function asegurarTablaPagos() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS pagos (
         id SERIAL PRIMARY KEY,
+        comercio_id INTEGER,
         venta_id VARCHAR(100) UNIQUE NOT NULL,
         metodo VARCHAR(50) NOT NULL,
         monto NUMERIC NOT NULL,
@@ -35,8 +38,8 @@ async function asegurarTablaPagos() {
 }
 
 /**
- * 1. MITIGACIÓN DE PRICE TAMPERING:
- * Calcula el total legítimo de la venta directamente desde la base de datos (PostgreSQL),
+ * 1. MITIGACIÓN DE PRICE TAMPERING Y CATÁLOGO MULTI-TENANT:
+ * Calcula el total legítimo de la venta directamente desde PostgreSQL (public.productos o legacy),
  * validando precios oficiales por medio de pago y verificando topes de descuento.
  */
 async function calcularTotalVerificadoDesdeBD(clientOrPool, items = [], metodo = 'qr', usuario = null) {
@@ -45,12 +48,30 @@ async function calcularTotalVerificadoDesdeBD(clientOrPool, items = [], metodo =
   }
 
   const esAdmin = usuario?.rol === 'jefe' || usuario?.rol === 'DUENO';
+  const comercioId = usuario?.comercio_id;
   let totalAcumulado = 0;
   const itemsVerificados = [];
 
   for (const item of items) {
-    const tipo = (item.tipoProducto || item.tipo || '').toLowerCase();
-    const prodId = item.productoId || item.id;
+    // Si el ítem es temporal / varios (F4), se respeta el monto ingresado
+    if (item.es_temporal || item.esTemporal || !item.id && !item.producto_unificado_id && !item.productoId) {
+      const precioUnit = Number(item.precio_unitario || item.precioUnitario || item.precio || 0);
+      const cant = Number(item.cantidad || 1);
+      const subtotalTemp = precioUnit * cant;
+      totalAcumulado += subtotalTemp;
+      itemsVerificados.push({
+        title: item.nombre || item.descripcion || 'Varios / Rápido',
+        unit_price: precioUnit,
+        quantity: cant,
+        unit_measure: 'unit',
+        total_amount: Math.round(subtotalTemp * 100) / 100,
+        es_temporal: true
+      });
+      continue;
+    }
+
+    const tipo = (item.tipoProducto || item.categoria || item.tipo || 'general').toLowerCase();
+    const prodId = item.producto_unificado_id || item.productoId || item.id;
     const cantidad = Number(item.cantidad) || 1;
     let descuento = Number(item.descuento) || 0;
 
@@ -61,28 +82,41 @@ async function calcularTotalVerificadoDesdeBD(clientOrPool, items = [], metodo =
       throw err;
     }
 
-    const config = MAP_TABLAS[tipo];
-    if (!config) {
-      const err = new Error(`Tipo de producto inválido: "${tipo}"`);
-      err.status = 400;
-      throw err;
+    let prodDb = null;
+
+    // 1. Buscar en public.productos si tenemos comercio_id
+    if (comercioId) {
+      const resUnified = await clientOrPool.query(
+        `SELECT id, nombre, precio_efectivo, precio_tarjeta, unidad_medida 
+         FROM public.productos 
+         WHERE id = $1 AND comercio_id = $2 AND activo = true`,
+        [prodId, comercioId]
+      );
+      if (resUnified.rows.length > 0) {
+        prodDb = resUnified.rows[0];
+      }
     }
 
-    // Consulta con parámetro preparado ($1) para evitar SQL Injection
-    const resProd = await clientOrPool.query(
-      `SELECT ${config.col} AS nombre, precio_efectivo, precio_tarjeta 
-       FROM ${config.tabla} 
-       WHERE id = $1 AND (activo = TRUE OR activo IS NULL)`,
-      [prodId]
-    );
+    // 2. Si no se encontró y hay mapeo legacy en MAP_TABLAS
+    if (!prodDb && MAP_TABLAS[tipo]) {
+      const config = MAP_TABLAS[tipo];
+      const resLegacy = await clientOrPool.query(
+        `SELECT ${config.col} AS nombre, precio_efectivo, precio_tarjeta 
+         FROM ${config.tabla} 
+         WHERE id = $1 AND (activo = TRUE OR activo IS NULL)`,
+        [prodId]
+      );
+      if (resLegacy.rows.length > 0) {
+        prodDb = resLegacy.rows[0];
+      }
+    }
 
-    if (resProd.rows.length === 0) {
-      const err = new Error(`Producto ${tipo} ID ${prodId} no disponible o dado de baja`);
+    if (!prodDb) {
+      const err = new Error(`Producto "${tipo}" ID ${prodId} no disponible o dado de baja`);
       err.status = 404;
       throw err;
     }
 
-    const prodDb = resProd.rows[0];
     const precioOficial = metodo === 'efectivo'
       ? Number(prodDb.precio_efectivo)
       : Number(prodDb.precio_tarjeta || prodDb.precio_efectivo);
@@ -94,7 +128,7 @@ async function calcularTotalVerificadoDesdeBD(clientOrPool, items = [], metodo =
       title: prodDb.nombre,
       unit_price: precioOficial,
       quantity: cantidad,
-      unit_measure: 'unit',
+      unit_measure: prodDb.unidad_medida || 'unit',
       total_amount: Math.round(subtotal * 100) / 100,
       descuento
     });
@@ -170,97 +204,241 @@ async function obtenerEstadoPago(ventaId) {
   };
 }
 
-async function crearOrdenQR({ ventaId, total, items = [], sucursalId, titulo, usuario = null }) {
-  const isMock = process.env.MP_MOCK_MODE === 'true';
-  const { MP_ACCESS_TOKEN, MP_USER_ID, MP_STORE_ID, MP_POS_ID, API_URL } = process.env;
+/**
+ * 2. CREAR ORDEN EN QR ÚNICO DE MOSTRADOR (MODELO ATENDIDO / IN-STORE)
+ * Desencripta el access_token del comercio y envía la orden con monto exacto al POS de la sucursal.
+ */
+async function crearOrdenQRFijo({ items = [], sucursalId, total, usuario }) {
+  const comercioId = usuario?.comercio_id;
+  const sId = parseInt(sucursalId || usuario?.sucursalId, 10);
 
-  // 2. CONTROL DE ACCESO (RBAC/IDOR): Operador restringido a su sucursal
-  const esAdmin = usuario?.rol === 'jefe' || usuario?.rol === 'DUENO';
-  if (!esAdmin && usuario?.sucursalId && sucursalId && Number(usuario.sucursalId) !== Number(sucursalId)) {
-    const err = new Error('Acceso denegado: No puedes crear órdenes de cobro para una sucursal distinta a la asignada');
+  if (!comercioId) {
+    const err = new Error('No se identificó el comercio en la sesión');
     err.status = 403;
     throw err;
   }
 
-  // 1. MITIGACIÓN DE PRICE TAMPERING: Calcular y validar el total con la base de datos
-  let montoFinal = Number(total);
-  let itemsParaMP = items;
-
-  if (items.length > 0) {
-    try {
-      const { totalServidor, itemsVerificados } = await calcularTotalVerificadoDesdeBD(pool, items, 'qr', usuario);
-      
-      // Si el cliente envió un monto que discrepa del calculado por el servidor, bloqueamos el intento
-      if (total !== undefined && Math.abs(Number(total) - totalServidor) > 0.05) {
-        const err = new Error(`Discrepancia de precios detectada (Price Tampering): Monto cliente $${total} vs Servidor $${totalServidor}`);
-        err.status = 400;
-        throw err;
-      }
-      montoFinal = totalServidor;
-      itemsParaMP = itemsVerificados;
-    } catch (err) {
-      if (err.status) throw err;
-      // Si la BD está desconectada en mock mode, continuamos con el monto provisto
-    }
-  }
-
-  await guardarPago({
-    ventaId,
-    metodo: 'qr',
-    monto: montoFinal,
-    estado: 'pendiente',
-    detalle: { items: itemsParaMP, sucursalId }
-  });
-
-  if (isMock) {
-    return {
-      success: true,
-      mock: true,
-      ventaId,
-      monto: montoFinal,
-      estado: 'pendiente',
-      qrData: `00020101021243650016COM.MERCADOLIBRE0129https://mpago.la/pos/${MP_POS_ID || '140722813'}`,
-      message: 'Orden QR generada en modo simulación'
-    };
-  }
-
-  if (!MP_ACCESS_TOKEN || !MP_USER_ID || !MP_STORE_ID || !MP_POS_ID) {
-    const err = new Error('Faltan credenciales de Mercado Pago (MP_ACCESS_TOKEN, MP_USER_ID, MP_STORE_ID, MP_POS_ID)');
-    err.status = 500;
+  if (!sId) {
+    const err = new Error('Se requiere especificar la sucursal para enviar la orden al QR');
+    err.status = 400;
     throw err;
   }
 
+  // Control RBAC: operador solo puede operar en su sucursal asignada
+  const esAdmin = usuario?.rol === 'jefe' || usuario?.rol === 'DUENO';
+  if (!esAdmin && usuario?.sucursalId && Number(usuario.sucursalId) !== sId) {
+    const err = new Error('Acceso denegado: No puedes crear órdenes para una sucursal distinta a la asignada');
+    err.status = 403;
+    throw err;
+  }
+
+  // Consultar datos de sucursal
+  const sucRes = await pool.query(
+    `SELECT id, nombre, mp_external_store_id, mp_external_pos_id, mp_qr_imagen_url, mp_qr_data 
+     FROM public.sucursales 
+     WHERE id = $1 AND comercio_id = $2`,
+    [sId, comercioId]
+  );
+
+  if (sucRes.rows.length === 0) {
+    const err = new Error('Sucursal no encontrada');
+    err.status = 404;
+    throw err;
+  }
+
+  const sucursal = sucRes.rows[0];
+
+  // Consultar credenciales de Mercado Pago del comercio
+  const intRes = await pool.query(
+    `SELECT mp_activo, mp_user_id, mp_access_token_enc 
+     FROM public.integraciones_comercio 
+     WHERE comercio_id = $1`,
+    [comercioId]
+  );
+
+  const integracion = intRes.rows[0];
+  const isMock = process.env.MP_MOCK_MODE === 'true';
+
+  if (!isMock && (!integracion || !integracion.mp_activo || !integracion.mp_access_token_enc)) {
+    const err = new Error('Tu comercio no tiene configurada o activa la integración con Mercado Pago. Ve a Configuración -> Integraciones.');
+    err.status = 400;
+    throw err;
+  }
+
+  // Mitigación de Price Tampering
+  const { totalServidor, itemsVerificados } = await calcularTotalVerificadoDesdeBD(pool, items, 'qr', usuario);
+  const montoFinal = totalServidor > 0 ? totalServidor : Number(total || 0);
+
+  if (total !== undefined && totalServidor > 0 && Math.abs(Number(total) - totalServidor) > 0.05) {
+    const err = new Error(`Discrepancia de precios detectada (Price Tampering): Enviado $${total} vs Calculado $${totalServidor}`);
+    err.status = 400;
+    throw err;
+  }
+
+  // Generar external_reference estructurado: c_${comercio_id}_s_${sucursal_id}_${timestamp}_${random}
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(2, 7);
+  const externalReference = `c_${comercioId}_s_${sId}_${timestamp}_${randomStr}`;
+
+  // Registrar en tabla de pagos
+  await guardarPago({
+    ventaId: externalReference,
+    metodo: 'mercadopago_qr',
+    monto: montoFinal,
+    estado: 'pendiente',
+    detalle: {
+      comercioId,
+      sucursalId: sId,
+      items: itemsVerificados.length > 0 ? itemsVerificados : items,
+      externalReference
+    }
+  });
+
+  const accessToken = integracion?.mp_access_token_enc ? desencriptarTexto(integracion.mp_access_token_enc) : null;
+  const esTokenMock = accessToken ? accessToken.startsWith('TEST-MOCK') || accessToken.startsWith('TEST-000000') : false;
+
+  if (isMock || esTokenMock || !accessToken) {
+    return {
+      success: true,
+      mock: true,
+      external_reference: externalReference,
+      total: montoFinal,
+      sucursal: {
+        id: sucursal.id,
+        nombre: sucursal.nombre,
+        qr_imagen_url: sucursal.mp_qr_imagen_url
+      },
+      mensaje: 'Orden enviada al QR del mostrador (Modo Simulación activo)'
+    };
+  }
+
+  if (!sucursal.mp_external_store_id || !sucursal.mp_external_pos_id) {
+    const err = new Error('La sucursal aún no tiene generado su QR Único de mostrador. Ve a Configuración -> Integraciones para generarlo.');
+    err.status = 400;
+    throw err;
+  }
+
+  const userId = integracion.mp_user_id;
+  const itemsParaMP = (itemsVerificados.length > 0 ? itemsVerificados : items).map(i => ({
+    title: (i.title || i.nombre || 'Producto').substring(0, 50),
+    unit_price: Number(i.unit_price || i.precio_unitario || montoFinal),
+    quantity: Number(i.quantity || i.cantidad || 1),
+    unit_measure: i.unit_measure || 'unit',
+    total_amount: Number(i.total_amount || montoFinal)
+  }));
+
   const mpPayload = {
-    external_reference: String(ventaId),
-    title: titulo || `Venta #${ventaId}`,
-    description: 'Cobro en Punto de Venta Scribo',
-    notification_url: `${API_URL || 'http://localhost:3000'}/api/pagos/webhook/mercadopago`,
+    external_reference: externalReference,
+    title: `Venta Mostrador ${sucursal.nombre}`.substring(0, 45),
+    description: 'Cobro en mostrador Scribo POS',
+    notification_url: `${process.env.API_URL || 'http://localhost:3000'}/api/pagos/webhook?comercio_id=${comercioId}`,
     total_amount: montoFinal,
-    items: itemsParaMP.map(i => ({
-      title: i.title || i.nombre || 'Producto',
-      unit_price: Number(i.unit_price || i.precioUnitario || montoFinal),
-      quantity: Number(i.quantity || i.cantidad || 1),
-      unit_measure: 'unit',
-      total_amount: Number(i.total_amount || montoFinal)
-    }))
+    items: itemsParaMP
   };
 
-  const mpUrl = `https://api.mercadopago.com/instore/qr/seller/collectors/${MP_USER_ID}/stores/${MP_STORE_ID}/pos/${MP_POS_ID}/orders`;
-  const mpResponse = await axios.put(mpUrl, mpPayload, {
-    headers: {
-      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-      'Content-Type': 'application/json'
+  const mpUrl = `https://api.mercadopago.com/instore/qr/seller/collectors/${userId}/stores/${sucursal.mp_external_store_id}/pos/${sucursal.mp_external_pos_id}/orders`;
+
+  try {
+    await axios.put(mpUrl, mpPayload, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 8000
+    });
+  } catch (errMP) {
+    console.error('Error al enviar orden a Mercado Pago:', errMP.response?.data || errMP.message);
+    const err = new Error(`Error de comunicación con Mercado Pago: ${errMP.response?.data?.message || errMP.message}`);
+    err.status = 502;
+    throw err;
+  }
+
+  return {
+    success: true,
+    external_reference: externalReference,
+    total: montoFinal,
+    sucursal: {
+      id: sucursal.id,
+      nombre: sucursal.nombre,
+      qr_imagen_url: sucursal.mp_qr_imagen_url
     }
+  };
+}
+
+/**
+ * 3. CANCELAR ORDEN EN QR ÚNICO DE MOSTRADOR
+ */
+async function cancelarOrdenQRFijo({ sucursalId, usuario }) {
+  const comercioId = usuario?.comercio_id;
+  const sId = parseInt(sucursalId || usuario?.sucursalId, 10);
+
+  const sucRes = await pool.query(
+    `SELECT id, mp_external_store_id, mp_external_pos_id FROM public.sucursales WHERE id = $1 AND comercio_id = $2`,
+    [sId, comercioId]
+  );
+
+  if (sucRes.rows.length === 0) {
+    return { success: true, cancelada: true };
+  }
+
+  const sucursal = sucRes.rows[0];
+
+  const intRes = await pool.query(
+    `SELECT mp_user_id, mp_access_token_enc FROM public.integraciones_comercio WHERE comercio_id = $1`,
+    [comercioId]
+  );
+  const integracion = intRes.rows[0];
+
+  if (process.env.MP_MOCK_MODE !== 'true' && integracion?.mp_access_token_enc && sucursal.mp_external_store_id && sucursal.mp_external_pos_id) {
+    try {
+      const accessToken = desencriptarTexto(integracion.mp_access_token_enc);
+      const url = `https://api.mercadopago.com/instore/qr/seller/collectors/${integracion.mp_user_id}/stores/${sucursal.mp_external_store_id}/pos/${sucursal.mp_external_pos_id}/orders`;
+      await axios.delete(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 6000
+      });
+    } catch (err) {
+      console.log('Info al cancelar orden en MP:', err.response?.data || err.message);
+    }
+  }
+
+  return { success: true, cancelada: true };
+}
+
+/**
+ * 4. SIMULACIÓN DE PAGO QR (MODO MOCK / PRUEBAS)
+ */
+async function simularPagoQR({ external_reference }) {
+  if (!external_reference) {
+    const err = new Error('Falta external_reference');
+    err.status = 400;
+    throw err;
+  }
+
+  const pagoActualizado = await guardarPago({
+    ventaId: external_reference,
+    estado: 'aprobado',
+    mpPaymentId: `mock_pay_${Date.now()}`
+  });
+
+  emitPagoAprobado({
+    external_reference,
+    estado: 'aprobado',
+    mock: true,
+    monto: pagoActualizado.monto
   });
 
   return {
     success: true,
-    ventaId,
-    monto: montoFinal,
-    estado: 'pendiente',
-    qrData: mpResponse.data?.qr_data || null,
-    orderData: mpResponse.data
+    external_reference,
+    estado: 'aprobado',
+    pago: pagoActualizado
   };
+}
+
+// Compatibilidad con endpoint anterior
+async function crearOrdenQR(params) {
+  return crearOrdenQRFijo(params);
 }
 
 async function crearIntencionPosnet({ ventaId, monto, items = [], deviceId, usuario = null }) {
@@ -270,7 +448,6 @@ async function crearIntencionPosnet({ ventaId, monto, items = [], deviceId, usua
 
   let montoFinal = Number(monto);
 
-  // 1. MITIGACIÓN DE PRICE TAMPERING EN POSNET
   if (items.length > 0) {
     try {
       const { totalServidor } = await calcularTotalVerificadoDesdeBD(pool, items, 'posnet', usuario);
@@ -353,16 +530,10 @@ async function simularPosnet({ ventaId, accion }) {
   return { success: true, ventaId, estado: nuevoEstado, pago: pagoActualizado };
 }
 
-/**
- * 3. VALIDACIÓN CRIPTOGRÁFICA DE WEBHOOKS DE MERCADO PAGO:
- * Valida la autenticidad de la firma HMAC-SHA256 (x-signature y x-request-id)
- * para evitar inyecciones de notificaciones falsas en producción.
- */
-function validarFirmaWebhookMP({ headers, query, body }) {
-  const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+function validarFirmaWebhookMP({ headers, query, body, customSecret = null }) {
+  const webhookSecret = customSecret || process.env.MP_WEBHOOK_SECRET;
   const isMock = process.env.MP_MOCK_MODE === 'true';
 
-  // Si está en modo mock o no se ha configurado secret en desarrollo, se permite con advertencia
   if (isMock || !webhookSecret) {
     return { valido: true, mock: true };
   }
@@ -375,7 +546,6 @@ function validarFirmaWebhookMP({ headers, query, body }) {
     return { valido: false, razon: 'Faltan cabeceras de firma requeridas por Mercado Pago (x-signature / x-request-id)' };
   }
 
-  // Parsear ts y v1 del header x-signature (ej: ts=1704067200,v1=abcdef...)
   const parts = xSignature.split(',').reduce((acc, part) => {
     const [key, val] = part.trim().split('=');
     if (key && val) acc[key] = val;
@@ -387,18 +557,15 @@ function validarFirmaWebhookMP({ headers, query, body }) {
     return { valido: false, razon: 'Estructura de x-signature no válida' };
   }
 
-  // Protección contra Replay Attacks: tolerancia máxima de 10 minutos (600 segundos)
   const tsSegundos = parseInt(ts, 10);
   const ahoraSegundos = Math.floor(Date.now() / 1000);
   if (Math.abs(ahoraSegundos - tsSegundos) > 600) {
     return { valido: false, razon: 'Timestamp del webhook expirado (posible Replay Attack)' };
   }
 
-  // Manifiesto estándar de Mercado Pago: id:[data.id];request-id:[x-request-id];ts:[ts];
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
   const hmac = crypto.createHmac('sha256', webhookSecret).update(manifest).digest('hex');
 
-  // Comparación en tiempo constante para mitigar Timing Attacks
   try {
     const bufHmac = Buffer.from(hmac);
     const bufV1 = Buffer.from(v1);
@@ -410,62 +577,131 @@ function validarFirmaWebhookMP({ headers, query, body }) {
 }
 
 /**
- * 3. PROCESAMIENTO IDEMPOTENTE DEL WEBHOOK:
- * Garantiza que notificaciones duplicadas no causen re-procesamiento ni inconsistencias.
+ * 5. PROCESAMIENTO IDEMPOTENTE DEL WEBHOOK MULTI-TENANT:
+ * Lee el comercio desde la external_reference o parámetros, desencripta sus credenciales,
+ * valida el pago en Mercado Pago y notifica a los clientes WebSocket en tiempo real.
  */
 async function procesarWebhook({ headers = {}, body = {}, query = {} }) {
-  // 1. Verificación de firma criptográfica
-  const verificacion = validarFirmaWebhookMP({ headers, query, body });
+  // Test o notificación directa simulada (Dev/Test)
+  if (body?.ventaId && body?.status) {
+    const vId = String(body.ventaId);
+    const nuevoEstado = body.status === 'approved' || body.status === 'aprobado' ? 'aprobado' : 'rechazado';
+    await guardarPago({ ventaId: vId, estado: nuevoEstado });
+    emitPagoAprobado({ external_reference: vId, estado: nuevoEstado, mock: true });
+    return { procesado: true, ventaId: vId, estado: nuevoEstado };
+  }
+
+  let comercioId = query.comercio_id || body?.comercio_id;
+  const rawDataId = query['data.id'] || query.id || body?.data?.id || body?.id;
+  const topic = query.topic || query.type || body?.type || body?.topic;
+
+  // Si no vino comercio_id directo, intentar inferirlo de pagos pendientes con ese ID
+  if (!comercioId && rawDataId) {
+    try {
+      const resP = await pool.query(
+        `SELECT comercio_id FROM public.pagos WHERE mp_payment_id = $1 OR venta_id = $1 LIMIT 1`,
+        [String(rawDataId)]
+      );
+      if (resP.rows.length > 0) {
+        comercioId = resP.rows[0].comercio_id;
+      }
+    } catch {
+      // Ignorar fallo de consulta
+    }
+  }
+
+  comercioId = comercioId ? parseInt(comercioId, 10) : 1;
+
+  // Consultar credenciales del comercio para consultar a MP
+  let accessToken = process.env.MP_ACCESS_TOKEN;
+  let webhookSecret = process.env.MP_WEBHOOK_SECRET;
+
+  try {
+    const intRes = await pool.query(
+      `SELECT mp_access_token_enc, mp_webhook_secret_enc FROM public.integraciones_comercio WHERE comercio_id = $1`,
+      [comercioId]
+    );
+    if (intRes.rows.length > 0) {
+      if (intRes.rows[0].mp_access_token_enc) {
+        accessToken = desencriptarTexto(intRes.rows[0].mp_access_token_enc);
+      }
+      if (intRes.rows[0].mp_webhook_secret_enc) {
+        webhookSecret = desencriptarTexto(intRes.rows[0].mp_webhook_secret_enc);
+      }
+    }
+  } catch {
+    // Usar defaults si falla
+  }
+
+  // Verificación de firma criptográfica
+  const verificacion = validarFirmaWebhookMP({ headers, query, body, customSecret: webhookSecret });
   if (!verificacion.valido) {
     const err = new Error(`Firma de Webhook no válida: ${verificacion.razon}`);
     err.status = 401;
     throw err;
   }
 
-  // 2. Notificación directa simulada (Dev/Test)
-  if (body?.ventaId && body?.status) {
-    const vId = String(body.ventaId);
-    const nuevoEstado = body.status === 'approved' || body.status === 'aprobado' ? 'aprobado' : 'rechazado';
-    
-    // Idempotencia: si ya está en ese estado, no re-procesar
-    const estadoActual = await obtenerEstadoPago(vId);
-    if (estadoActual.estado === nuevoEstado) {
-      return { procesado: true, yaProcesado: true, estado: nuevoEstado };
-    }
-
-    await guardarPago({ ventaId: vId, estado: nuevoEstado });
-    return { procesado: true, ventaId: vId, estado: nuevoEstado };
-  }
-
-  // 3. Notificación oficial de Mercado Pago
-  const paymentId = query['data.id'] || query.id || body?.data?.id || body?.id;
-  if (!paymentId || !process.env.MP_ACCESS_TOKEN) {
+  if (!rawDataId || !accessToken) {
     return { procesado: false };
   }
 
-  const mpRes = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` }
-  });
+  let externalRef = null;
+  let status = null;
+  let paymentId = null;
 
-  const paymentData = mpRes.data;
-  const ventaId = paymentData?.external_reference;
-  const status = paymentData?.status;
+  try {
+    if (topic === 'merchant_order') {
+      const resOrder = await axios.get(`https://api.mercadopago.com/merchant_orders/${rawDataId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 8000
+      });
+      const order = resOrder.data;
+      externalRef = order.external_reference;
+      if (order.payments && order.payments.length > 0) {
+        const approvedPay = order.payments.find(p => p.status === 'approved') || order.payments[order.payments.length - 1];
+        status = approvedPay.status;
+        paymentId = approvedPay.id;
+      } else if (order.order_status === 'paid') {
+        status = 'approved';
+      }
+    } else {
+      const resPay = await axios.get(`https://api.mercadopago.com/v1/payments/${rawDataId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 8000
+      });
+      const paymentData = resPay.data;
+      externalRef = paymentData.external_reference;
+      status = paymentData.status;
+      paymentId = paymentData.id;
+    }
+  } catch (errMP) {
+    console.error('Error consultando estado en Mercado Pago:', errMP.response?.data || errMP.message);
+    return { procesado: false, error: errMP.message };
+  }
 
-  if (ventaId) {
+  if (externalRef && status) {
     const nuevoEstado = status === 'approved' ? 'aprobado' : status;
-    const estadoActual = await obtenerEstadoPago(ventaId);
+    const estadoActual = await obtenerEstadoPago(externalRef);
 
-    // Idempotencia estricta: si ya fue aprobado, descartar duplicados
     if (estadoActual.estado === 'aprobado') {
-      return { procesado: true, yaProcesado: true, ventaId, estado: 'aprobado' };
+      return { procesado: true, yaProcesado: true, external_reference: externalRef, estado: 'aprobado' };
     }
 
     await guardarPago({
-      ventaId: String(ventaId),
+      ventaId: String(externalRef),
       estado: nuevoEstado,
-      mpPaymentId: String(paymentId)
+      mpPaymentId: String(paymentId || rawDataId)
     });
-    return { procesado: true, ventaId, estado: nuevoEstado, paymentId };
+
+    if (nuevoEstado === 'aprobado') {
+      emitPagoAprobado({
+        external_reference: externalRef,
+        estado: 'aprobado',
+        payment_id: paymentId || rawDataId
+      });
+    }
+
+    return { procesado: true, external_reference: externalRef, estado: nuevoEstado, paymentId };
   }
 
   return { procesado: false };
@@ -475,6 +711,9 @@ module.exports = {
   guardarPago,
   obtenerEstadoPago,
   crearOrdenQR,
+  crearOrdenQRFijo,
+  cancelarOrdenQRFijo,
+  simularPagoQR,
   crearIntencionPosnet,
   simularPosnet,
   validarFirmaWebhookMP,

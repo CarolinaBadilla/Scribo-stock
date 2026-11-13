@@ -185,7 +185,7 @@ function construirComandosEscPosTicket({ sucursal, items, total, tipoPago, compr
  * Fallback de impresión térmica de 80mm usando iframe oculto y CSS de página de rollo
  */
 export function imprimirTicketTermico80mm(datos) {
-  const { sucursal, items = [], total = 0, tipoPago = 'Efectivo', comprobante, fecha } = datos;
+  const { sucursal, items = [], total = 0, tipoPago = 'Efectivo', comprobante, fecha, factura } = datos;
 
   const fechaFormateada = fecha
     ? new Date(fecha).toLocaleString('es-AR')
@@ -272,7 +272,18 @@ export function imprimirTicketTermico80mm(datos) {
         <div class="header-title">SCRIBO POS</div>
         <div class="bold">${sucursal?.nombre || 'Casa Central'}</div>
         <div>${sucursal?.direccion || 'Av. Argentina 123'}</div>
-        <div style="font-size: 10px; margin-top: 2px;">COMPROBANTE NO FISCAL</div>
+        ${factura ? `
+          <div class="center bold" style="font-size: 15px; border: 2px solid #000; width: 32px; margin: 4px auto; padding: 2px;">
+            ${factura.letraComprobante || (factura.tipoComprobante === 6 ? 'B' : 'C')}
+          </div>
+          <div class="center bold" style="font-size: 11px;">FACTURA ELECTRÓNICA</div>
+          <div class="center" style="font-size: 10px;">
+            PV: ${String(factura.puntoVenta || 1).padStart(4, '0')} · NRO: ${String(factura.numeroComprobante || 1).padStart(8, '0')}
+          </div>
+          ${factura.cuitEmisor ? `<div class="center" style="font-size: 10px;">CUIT: ${factura.cuitEmisor}</div>` : ''}
+        ` : `
+          <div style="font-size: 10px; margin-top: 2px;">COMPROBANTE NO FISCAL</div>
+        `}
       </div>
 
       <div class="divider"></div>
@@ -321,6 +332,20 @@ export function imprimirTicketTermico80mm(datos) {
       </div>
 
       <div class="divider"></div>
+
+      ${factura ? `
+        <div style="font-size: 11px;">
+          <div><span class="bold">CAE:</span> ${factura.cae}</div>
+          <div><span class="bold">Vto. CAE:</span> ${factura.caeVencimiento}</div>
+        </div>
+        ${factura.qrAfipUrl ? `
+          <div class="center" style="margin-top: 8px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(factura.qrAfipUrl)}" style="width: 110px; height: 110px; margin: 0 auto; display: block;" alt="QR AFIP" />
+            <div style="font-size: 8px; margin-top: 2px;">Comprobante Autorizado por AFIP / ARCA</div>
+          </div>
+        ` : ''}
+        <div class="divider"></div>
+      ` : ''}
 
       <div class="center footer">
         <div>¡Gracias por su compra!</div>

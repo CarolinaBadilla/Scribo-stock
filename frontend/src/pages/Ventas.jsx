@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { EscanerInput } from '../components/EscanerInput';
 import { SelectorPago } from '../components/SelectorPago';
-import { formatMoney } from '../utils/formatters';
+import { formatMoney, formatearCantidadStock } from '../utils/formatters';
 import {
   esMetodoEfectivo,
   obtenerPrecioAplicable,
@@ -23,12 +23,33 @@ export function Ventas() {
   const [sucursales, setSucursales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mostrarSelectorPago, setMostrarSelectorPago] = useState(false);
+  const [mostrarModalVarios, setMostrarModalVarios] = useState(false);
+  const [variosDescripcion, setVariosDescripcion] = useState('Varios');
+  const [variosPrecio, setVariosPrecio] = useState('');
 
   useEffect(() => {
     cargarSucursales();
   }, []);
 
+  // Atajo de teclado F4 para abrir modal de Ítem Rápido / Varios
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'F4') {
+        e.preventDefault();
+        setMostrarModalVarios(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   const cargarSucursales = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get('/sucursales');
       setSucursales(response.data);
@@ -45,22 +66,49 @@ export function Ventas() {
     }
   };
 
-  const handleProductoEncontrado = async (codigo) => {
+  const handleProductoEncontrado = async (codigoRaw) => {
     try {
-      const response = await api.get(`/productos/buscar?codigo=${encodeURIComponent(codigo)}&sucursal=${sucursalId}`);
+      if (!codigoRaw || !codigoRaw.trim()) return;
+
+      let multiplicador = 1;
+      let codigoABuscar = codigoRaw.trim();
+
+      // Soporte multiplicador: cantidad*codigo (ej: 3*7790895000997 o 0.5*00145)
+      if (codigoABuscar.includes('*')) {
+        const partes = codigoABuscar.split('*');
+        if (partes.length === 2) {
+          const numParsed = parseFloat(partes[0].trim());
+          if (!isNaN(numParsed) && numParsed > 0) {
+            multiplicador = numParsed;
+            codigoABuscar = partes[1].trim();
+          }
+        }
+      }
+
+      if (!codigoABuscar) return;
+
+      const sucursalParam = sucursalId ? `&sucursal=${encodeURIComponent(sucursalId)}` : '';
+      const response = await api.get(`/productos/buscar?codigo=${encodeURIComponent(codigoABuscar)}${sucursalParam}`);
       const producto = response.data;
 
-      if (!producto?.producto_id) {
+      if (!producto?.producto_id && !producto?.id) {
         toast.error('❌ Producto no encontrado');
         return;
       }
 
       if (Number(producto.cantidad) <= 0) {
-        toast.warning(`⚠️ "${producto.nombre_producto}" existe pero tiene 0 unidades en esta sucursal`);
+        toast.warning(`⚠️ "${producto.nombre_producto}" existe pero tiene ${formatearCantidadStock(0, producto.es_pesable, producto.unidad_medida)} en esta sucursal`);
         return;
       }
 
-      agregarAlCarrito(producto);
+      // Si la balanza detectó peso en la etiqueta o se pasó multiplicador N*
+      const cantDetectada = Number(producto.cantidad_detectada) || 1;
+      const cantFinal = Math.round(multiplicador * cantDetectada * 1000) / 1000;
+
+      agregarAlCarrito({
+        ...producto,
+        cantidad_detectada: cantFinal
+      });
     } catch (error) {
       if (error.response?.status === 404) {
         toast.error('❌ Producto no encontrado en el catálogo');
@@ -70,42 +118,97 @@ export function Ventas() {
     }
   };
 
+  const handleAgregarVarios = (e) => {
+    e.preventDefault();
+    const precio = parseFloat(variosPrecio);
+    if (isNaN(precio) || precio <= 0) {
+      toast.error('El importe debe ser mayor a 0');
+      return;
+    }
+
+    const desc = variosDescripcion.trim() || 'Varios';
+    const nuevoItem = {
+      id: null,
+      producto_unificado_id: null,
+      tipo: 'varios',
+      categoria: 'varios',
+      nombre: desc,
+      cantidad: 1,
+      es_pesable: false,
+      unidad_medida: 'unidad',
+      precioEfectivo: precio,
+      precioTarjeta: precio,
+      precio_efectivo: precio,
+      precio_tarjeta: precio,
+      descuento: 0,
+      stockDisponible: 999999,
+      es_temporal: true
+    };
+
+    setCarrito(prev => [...prev, nuevoItem]);
+    setVariosDescripcion('Varios');
+    setVariosPrecio('');
+    setMostrarModalVarios(false);
+    toast.success(`⚡ "${desc}" agregado al carrito`);
+  };
+
   const agregarAlCarrito = (producto) => {
     const precioEfectivo = Number(producto.precio_efectivo) || 0;
     const precioTarjeta = Number(producto.precio_tarjeta || producto.precio_efectivo) || precioEfectivo;
+    const prodId = producto.producto_id || producto.id;
+    const prodTipo = producto.tipo_producto || producto.categoria || 'general';
+    const cantDetectada = Number(producto.cantidad_detectada) || 1;
+    const esPesable = Boolean(producto.es_pesable);
+    const unidadMedida = producto.unidad_medida || 'unidad';
+    const stockDisponible = Number(producto.cantidad) || 0;
     
     setCarrito(prev => {
-      const existe = prev.find(item => item.id === producto.producto_id && item.tipo === producto.tipo_producto);
+      const existe = prev.find(item => item.id === prodId && item.tipo === prodTipo);
       if (existe) {
+        const cantSumada = esPesable
+          ? Math.round((Number(existe.cantidad) + cantDetectada) * 1000) / 1000
+          : (existe.cantidad + cantDetectada);
+
+        if (cantSumada > stockDisponible) {
+          toast.warning(`Stock insuficiente para "${producto.nombre_producto}". Disponible: ${formatearCantidadStock(stockDisponible, esPesable, unidadMedida)}`);
+          return prev;
+        }
+
         return prev.map(item =>
-          item.id === producto.producto_id && item.tipo === producto.tipo_producto
-            ? { ...item, cantidad: item.cantidad + 1 }
+          item.id === prodId && item.tipo === prodTipo
+            ? { ...item, cantidad: cantSumada }
             : item
         );
       }
       return [...prev, {
-        id: producto.producto_id,
-        tipo: producto.tipo_producto,
-        nombre: producto.nombre_producto,
-        cantidad: 1,
+        id: prodId,
+        producto_unificado_id: producto.producto_unificado_id || prodId,
+        tipo: prodTipo,
+        categoria: producto.categoria || prodTipo,
+        nombre: producto.nombre_producto || producto.nombre,
+        cantidad: cantDetectada,
+        es_pesable: esPesable,
+        unidad_medida: unidadMedida,
         precioEfectivo,
         precioTarjeta,
         precio_efectivo: precioEfectivo,
         precio_tarjeta: precioTarjeta,
         descuento: 0,
-        stockDisponible: producto.cantidad
+        stockDisponible
       }];
     });
   };
 
   const actualizarCantidad = (index, nuevaCantidad) => {
-    if (nuevaCantidad < 1) return;
-    if (nuevaCantidad > carrito[index].stockDisponible) {
-      alert(`Solo hay ${carrito[index].stockDisponible} unidades disponibles`);
+    const item = carrito[index];
+    const cantNum = Number(nuevaCantidad);
+    if (isNaN(cantNum) || cantNum <= 0) return;
+    if (!item.es_temporal && cantNum > item.stockDisponible) {
+      toast.warning(`Solo hay ${formatearCantidadStock(item.stockDisponible, item.es_pesable, item.unidad_medida)} disponibles`);
       return;
     }
     const nuevoCarrito = [...carrito];
-    nuevoCarrito[index].cantidad = nuevaCantidad;
+    nuevoCarrito[index].cantidad = item.es_pesable ? Math.round(cantNum * 1000) / 1000 : Math.floor(cantNum);
     setCarrito(nuevoCarrito);
   };
 
@@ -210,8 +313,22 @@ export function Ventas() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-5 shadow-xs">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#8a7a6a] mb-2.5">Ingreso de Productos</h2>
-            <EscanerInput onProductoEncontrado={handleProductoEncontrado} />
+            <div className="flex items-center justify-between mb-2.5">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#8a7a6a]">Ingreso de Productos</h2>
+              <button
+                type="button"
+                onClick={() => setMostrarModalVarios(true)}
+                className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                title="Atajo de teclado: F4"
+              >
+                <span>⚡</span>
+                <span>Ítem Rápido / Varios (F4)</span>
+              </button>
+            </div>
+            <EscanerInput 
+              onProductoEncontrado={handleProductoEncontrado} 
+              placeholder="Escanea o escribe código (ej: 3*779089 o 0.5*00145)..."
+            />
           </div>
           
           <div className="bg-[#fefcf8] rounded-2xl border border-[#e2d8cc] p-5 shadow-xs">
@@ -334,10 +451,22 @@ export function Ventas() {
                   return (
                     <div key={index} className="bg-[#f5f0e8]/50 border border-[#e2d8cc] rounded-xl p-3 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-base text-[#5a4a3a] truncate">{item.nombre}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-bold text-base text-[#5a4a3a] truncate">{item.nombre}</p>
+                          {item.es_temporal && (
+                            <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded font-bold">
+                              ⚡ Varios
+                            </span>
+                          )}
+                          {item.es_pesable && (
+                            <span className="text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                              ⚖️ Balanza
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-semibold text-[#8a7a6a]">
-                            {formatMoney(precioUnit)} c/u
+                            {formatMoney(precioUnit)} {item.es_pesable ? '/kg' : 'c/u'}
                           </span>
                           <span className="text-xs font-bold text-[#5a4a3a]">
                             = {formatMoney(subtotalItem)}
@@ -356,11 +485,20 @@ export function Ventas() {
                           <input
                             type="number"
                             value={item.cantidad}
-                            onChange={(e) => actualizarCantidad(index, parseInt(e.target.value) || 1)}
-                            className="w-14 p-1 border border-[#e2d8cc] rounded-lg text-center text-sm font-bold bg-white text-[#5a4a3a]"
-                            min="1"
-                            max={item.stockDisponible}
+                            step={item.es_pesable ? '0.001' : '1'}
+                            min={item.es_pesable ? '0.001' : '1'}
+                            max={item.es_temporal ? undefined : item.stockDisponible}
+                            onChange={(e) => {
+                              const val = item.es_pesable ? parseFloat(e.target.value) : parseInt(e.target.value, 10);
+                              actualizarCantidad(index, val);
+                            }}
+                            className="w-16 p-1 border border-[#e2d8cc] rounded-lg text-center text-sm font-bold bg-white text-[#5a4a3a]"
                           />
+                          {item.es_pesable && (
+                            <span className="text-[11px] font-semibold text-[#8a7a6a]">
+                              {item.unidad_medida || 'kg'}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -415,6 +553,73 @@ export function Ventas() {
           )}
         </div>
       </div>
+
+      {/* Modal Ítem Rápido / Varios */}
+      {mostrarModalVarios && (
+        <div className="fixed inset-0 bg-[#5a4a3a]/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-[#fefcf8] rounded-2xl shadow-2xl border border-[#e2d8cc] w-full max-w-sm p-5 text-[#5a4a3a]">
+            <div className="flex justify-between items-center pb-3 border-b border-[#e2d8cc]">
+              <h3 className="text-base font-bold flex items-center gap-1.5">
+                <span>⚡</span> Ítem Rápido / Varios
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMostrarModalVarios(false)}
+                className="w-7 h-7 rounded-lg bg-white border border-[#e2d8cc] text-[#8a7a6a] hover:text-[#5a4a3a] flex items-center justify-center text-xs font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAgregarVarios} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Descripción</label>
+                <input
+                  type="text"
+                  value={variosDescripcion}
+                  onChange={(e) => setVariosDescripcion(e.target.value)}
+                  placeholder="Varios"
+                  className="w-full px-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#c9a87b]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5a4a3a] mb-1">Importe ($) *</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-sm text-[#5a4a3a]">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={variosPrecio}
+                    onChange={(e) => setVariosPrecio(e.target.value)}
+                    placeholder="0.00"
+                    required
+                    className="w-full pl-8 pr-3.5 py-2 bg-white border border-[#e2d8cc] rounded-xl text-sm font-bold text-[#5a4a3a] focus:outline-none focus:ring-2 focus:ring-[#c9a87b]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalVarios(false)}
+                  className="flex-1 py-2 rounded-xl border border-[#e2d8cc] text-xs font-bold hover:bg-[#f5f0e8] text-[#5a4a3a] cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-[#5a4a3a] text-white text-xs font-bold hover:bg-[#43372b] cursor-pointer shadow-xs"
+                >
+                  Agregar al Carrito
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {IS_PAYMENTS_ENABLED && (
         <SelectorPago
